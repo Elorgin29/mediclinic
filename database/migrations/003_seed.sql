@@ -30,7 +30,7 @@ USE `mediclinic`;
 SET NAMES utf8mb4;
 
 -- Hachage bcrypt (12 rounds) du mot de passe « Passw0rd!2026 ».
-SET @password_hash = '$2b$12$2f9IKYQ7jtC9/VnBGH/JPucdDkFch2w6z9TlTpFc.iWqDgNF711d3.';
+SET @password_hash = '$2b$12$WH7cYvGsErB31hdkQy33b.h4BF8H6.Dkcsufw8k1DeRbDH3ggAiY.';
 
 -- -----------------------------------------------------------------------------
 -- 0. Purge (script rejouable). Les contraintes FK sont désactivées le temps
