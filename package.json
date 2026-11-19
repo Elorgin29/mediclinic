@@ -1,0 +1,52 @@
+{
+  "name": "mediclinic",
+  "private": true,
+  "version": "1.0.0",
+  "description": "MediClinic — plateforme de gestion d'une clinique médicale multi-départements (monorepo)",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "npm-run-all --parallel dev:api dev:web",
+    "dev:api": "npm run dev --workspace @mediclinic/api",
+    "dev:web": "npm run dev --workspace @mediclinic/web",
+    "build": "npm run build --workspace @mediclinic/api && npm run build --workspace @mediclinic/web",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "eslint . --ext .ts,.tsx",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,md,sql,css}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md,sql,css}\"",
+    "test": "npm run test --workspaces --if-present",
+    "test:api": "npm run test --workspace @mediclinic/api",
+    "test:web": "npm run test --workspace @mediclinic/web",
+    "test:shared": "npm run test --workspace @mediclinic/shared",
+    "db:create": "node database/scripts/reset-db.mjs",
+    "db:reset": "node database/scripts/reset-db.mjs --seed",
+    "prepare": "husky || true"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-react": "^7.37.2",
+    "eslint-plugin-react-hooks": "^4.6.2",
+    "husky": "^9.1.6",
+    "lint-staged": "^15.2.10",
+    "npm-run-all": "^4.1.5",
+    "prettier": "^3.3.3",
+    "typescript": "^5.6.3"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,sql,css}": [
+      "prettier --write"
+    ]
+  }
+}

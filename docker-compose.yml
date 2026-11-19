@@ -1,0 +1,59 @@
+# -----------------------------------------------------------------------------
+# Environnement de développement MediClinic
+#   docker compose up -d      -> MySQL 8 + phpMyAdmin + MailHog
+#   docker compose down -v    -> arrêt et suppression des volumes
+# Les scripts SQL de database/migrations sont joués automatiquement par MySQL
+# au premier démarrage (volume vide uniquement) : 001_init, 002_views, 003_seed.
+# -----------------------------------------------------------------------------
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mediclinic-mysql
+    restart: unless-stopped
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-mediclinic}
+      MYSQL_USER: ${MYSQL_USER:-mediclinic}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-mediclinic}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/migrations/001_init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./database/migrations/002_views.sql:/docker-entrypoint-initdb.d/02-views.sql:ro
+      - ./database/migrations/003_seed.sql:/docker-entrypoint-initdb.d/03-seed.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-rootpassword}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  phpmyadmin:
+    image: phpmyadmin:5
+    container_name: mediclinic-phpmyadmin
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      UPLOAD_LIMIT: 64M
+    ports:
+      - "8081:80"
+
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    container_name: mediclinic-mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+volumes:
+  mysql_data:
+    driver: local
