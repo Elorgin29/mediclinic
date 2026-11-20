@@ -60,18 +60,6 @@ function truncate(doc: PDFKit.PDFDocument, text: string, maxWidth: number): stri
   return `${result}…`;
 }
 
-/** Écrit un texte en le tronquant à la largeur disponible. */
-function ellipsisText(
-  doc: PDFKit.PDFDocument,
-  text: string,
-  x: number,
-  y: number,
-  maxWidth: number,
-  options: PDFKit.Mixins.TextOptions = {},
-): void {
-  doc.text(truncate(doc, text, maxWidth), x, y, options);
-}
-
 /** Vérifie qu'un logo exploitable existe ; renvoie son chemin absolu ou `null`. */
 function findLogo(): string | null {
   const candidate = path.join(env.paths.static, 'logo.png');

@@ -1,0 +1,43 @@
+meta {
+  name: Availability
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/doctors/{{doctorId}}/availability?date=2026-12-01
+  body: none
+  auth: none
+}
+
+params:query {
+  date: 2026-12-01
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  const body = res.getBody();
+  const isJson = body && typeof body === "object" && !Array.isArray(body) && !Buffer.isBuffer(body);
+  
+  test("statut 2xx", () => expect(res.status).to.be.within(200, 299));
+  if (res.status !== 204 && isJson) {
+    test("enveloppe data", () => expect(body).to.have.property("data"));
+  }
+}
+
+docs {
+  ### Availability
+
+  `GET {{baseUrl}}/api/doctors/{{doctorId}}/availability?date=2026-12-01`
+
+  Créneaux libres d'un médecin sur une date, grille de 30 min entre 08:00 et 18:00. Authentification optionnelle.
+
+  **Authentification** : publique / optionnelle
+
+  **Réponse attendue** : 200 — enveloppe `{ data: ... }` (ou fichier binaire pour PDF/CSV)
+
+  **Contrôles automatiques** : assertion de statut + test `statut 2xx` + test d’enveloppe JSON (ignoré pour 204 et les fichiers).
+}

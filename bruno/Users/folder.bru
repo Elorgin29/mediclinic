@@ -1,0 +1,22 @@
+meta {
+  name: Users
+}
+
+docs {
+  ## Dossier Users
+
+  Gestion des comptes utilisateurs : recherche, fiche, permissions effectives, création, mise à jour, désactivation et réinitialisation de mot de passe.
+
+  ### Requêtes
+
+  - `POST {{baseUrl}}/api/users` — Create
+  - `DELETE {{baseUrl}}/api/users/{{userId}}` — Delete
+  - `GET {{baseUrl}}/api/users/{{userId}}` — Get
+  - `GET {{baseUrl}}/api/users?page=1&limit=20` — List
+  - `GET {{baseUrl}}/api/users/me/profile` — Me Profile
+  - `GET {{baseUrl}}/api/users/{{userId}}/permissions` — Permissions
+  - `POST {{baseUrl}}/api/users/{{userId}}/reset-password` — Reset Password
+  - `PATCH {{baseUrl}}/api/users/{{userId}}` — Update
+
+  Toutes les requêtes utilisent l’environnement **Local** et l’en-tête `Authorization: Bearer {{accessToken}}` sauf mention contraire.
+}

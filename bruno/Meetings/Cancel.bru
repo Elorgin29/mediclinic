@@ -1,0 +1,43 @@
+meta {
+  name: Cancel
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/api/meetings/{{meetingId}}/cancel
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  const body = res.getBody();
+  const isJson = body && typeof body === "object" && !Array.isArray(body) && !Buffer.isBuffer(body);
+  
+  test("statut 2xx", () => expect(res.status).to.be.within(200, 299));
+  if (res.status !== 204 && isJson) {
+    test("enveloppe data", () => expect(body).to.have.property("data"));
+  }
+}
+
+docs {
+  ### Cancel
+
+  `POST {{baseUrl}}/api/meetings/{{meetingId}}/cancel`
+
+  Annulation d'une téléconsultation.
+
+  **Authentification** : `Authorization: Bearer {{accessToken}}`
+
+  **Réponse attendue** : 200 — enveloppe `{ data: ... }` (ou fichier binaire pour PDF/CSV)
+
+  **Contrôles automatiques** : assertion de statut + test `statut 2xx` + test d’enveloppe JSON (ignoré pour 204 et les fichiers).
+}

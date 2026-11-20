@@ -1,0 +1,24 @@
+meta {
+  name: Appointments
+}
+
+docs {
+  ## Dossier Appointments
+
+  Rendez-vous : agenda, prise de RDV publique, création interne, changements de statut et replanification. La téléconsultation crée automatiquement une réunion Zoom simulée.
+
+  ### Requêtes
+
+  - `GET {{baseUrl}}/api/appointments/calendar?from=2026-11-01&to=2026-12-31` — Calendar
+  - `PATCH {{baseUrl}}/api/appointments/{{appointmentId}}/status` — Change Status
+  - `POST {{baseUrl}}/api/appointments` — Create
+  - `DELETE {{baseUrl}}/api/appointments/{{appointmentId}}` — Delete
+  - `GET {{baseUrl}}/api/appointments/{{appointmentId}}` — Get
+  - `GET {{baseUrl}}/api/appointments?page=1&limit=20` — List
+  - `GET {{baseUrl}}/api/appointments/me` — Me
+  - `POST {{baseUrl}}/api/appointments/public` — Public Booking
+  - `GET {{baseUrl}}/api/appointments/today` — Today
+  - `PATCH {{baseUrl}}/api/appointments/{{appointmentId}}` — Update
+
+  Toutes les requêtes utilisent l’environnement **Local** et l’en-tête `Authorization: Bearer {{accessToken}}` sauf mention contraire.
+}

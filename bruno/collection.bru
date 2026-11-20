@@ -1,0 +1,52 @@
+meta {
+  name: MediClinic API
+}
+
+vars:pre-request {
+  baseUrl: http://localhost:4000
+}
+
+docs {
+  # MediClinic API — collection Bruno complète
+
+  152 requêtes couvrant tous les endpoints de l'API (24 modules + santé).
+
+  ## Démarrage
+  1. Démarrer l'API : `npm run dev:api` (port 4000 par défaut).
+  2. Initialiser la base : `npm run db:reset -- --yes` (ou `npm run db:reset` et répondre « oui »).
+  3. Sélectionner l'environnement **Local** dans Bruno.
+  4. Exécuter **Auth / Login** : le script post-response stocke `accessToken` et `refreshToken`
+     dans les variables Bruno. Toutes les requête protégées utilisent
+     `Authorization: Bearer {{accessToken}}`.
+  5. Lancer la collection ou un dossier. **Auth / Login doit toujours être exécuté en premier**
+     (ou après un refresh) pour obtenir un token valide (TTL 15 min).
+
+  ## Identifiants de démonstration
+  - email : `superadmin@mediclinic.fr`
+  - mot de passe : `Passw0rd!2026`
+  - autres comptes : `admin@mediclinic.fr`, `amine.haddad@mediclinic.fr`,
+    `paul.mercier@mediclinic.fr`, `emma.gautier@mediclinic.fr`, `lucie.durand@email.fr`
+
+  ## Variables d'environnement `Local`
+  `baseUrl`, `email`, `password`, `accessToken`, `refreshToken`,
+  `userId`, `roleId`, `permissionId`, `specialtyId`, `departmentId`, `doctorId`,
+  `patientId`, `appointmentId`, `consultationId`, `prescriptionId`, `meetingId`,
+  `labTestId`, `labRequestId`, `medicationId`, `movementId`, `invoiceId`, `paymentId`,
+  `shiftId`, `notificationId`, `auditId`, `docType`, `docId`,
+  `fromDate`, `toDate`, `futureDate`.
+
+  Les requêtes de mutation utilisent des données de démonstration ; ajustez les IDs
+  selon l'état de votre base. Les dates sont relatives à novembre 2026.
+
+  ## Conventions
+  - Succès : `{ "data": ... }` ; listes paginées : `{ "data": [...], "meta": {...} }`.
+  - Erreur : `{ "error": { "code": "...", "message": "..." } }`.
+  - Création : 201 ; suppression / logout / reset-password : 204 sans corps.
+  - Chaque requête possède une assertion de statut et un test d'enveloppe JSON.
+  - Les requêtes PDF/CSV téléchargent un fichier : le test d'enveloppe est ignoré.
+
+  ## Remarque
+  Le runner du plugin Bruno s'exécute côté serveur : si `localhost:4000` n'y est pas
+  joignable, importez ce dossier dans l'application Bruno locale (`workspace.yml` déjà
+  mis à jour) pour l'exécuter depuis votre machine.
+}

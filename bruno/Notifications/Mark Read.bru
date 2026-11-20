@@ -1,0 +1,43 @@
+meta {
+  name: Mark Read
+  type: http
+  seq: 5
+}
+
+patch {
+  url: {{baseUrl}}/api/notifications/{{notificationId}}/read
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  const body = res.getBody();
+  const isJson = body && typeof body === "object" && !Array.isArray(body) && !Buffer.isBuffer(body);
+  
+  test("statut 2xx", () => expect(res.status).to.be.within(200, 299));
+  if (res.status !== 204 && isJson) {
+    test("enveloppe data", () => expect(body).to.have.property("data"));
+  }
+}
+
+docs {
+  ### Mark Read
+
+  `PATCH {{baseUrl}}/api/notifications/{{notificationId}}/read`
+
+  Marque une notification personnelle comme lue. 403 si elle appartient à un autre compte.
+
+  **Authentification** : `Authorization: Bearer {{accessToken}}`
+
+  **Réponse attendue** : 200 — enveloppe `{ data: ... }` (ou fichier binaire pour PDF/CSV)
+
+  **Contrôles automatiques** : assertion de statut + test `statut 2xx` + test d’enveloppe JSON (ignoré pour 204 et les fichiers).
+}

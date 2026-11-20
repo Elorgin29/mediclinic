@@ -1,0 +1,17 @@
+meta {
+  name: Permissions
+}
+
+docs {
+  ## Dossier Permissions
+
+  RBAC — catalogue des 77 permissions atomiques `ressource:action`, regroupement par ressource et matrice complète.
+
+  ### Requêtes
+
+  - `GET {{baseUrl}}/api/permissions/grouped` — Grouped
+  - `GET {{baseUrl}}/api/permissions` — List
+  - `GET {{baseUrl}}/api/permissions/matrix` — Matrix
+
+  Toutes les requêtes utilisent l’environnement **Local** et l’en-tête `Authorization: Bearer {{accessToken}}` sauf mention contraire.
+}

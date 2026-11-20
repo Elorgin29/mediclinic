@@ -11,7 +11,7 @@
  * immédiatement, sans attendre l'expiration du jeton (15 minutes).
  */
 
-import type { NextFunction, Request, RequestHandler, Response } from 'express';
+import type { NextFunction, Request, Response } from 'express';
 
 import { queryOne, type Row } from '../config/db.js';
 import { verifyAccessToken } from '../config/jwt.js';

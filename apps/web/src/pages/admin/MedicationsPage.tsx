@@ -8,14 +8,15 @@
 
 import { formatDate, formatMoney, type Medication, type Paginated } from '@mediclinic/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, PackagePlus, Pill, Search } from 'lucide-react';
-import { useState } from 'react';
+import { AlertTriangle, PackagePlus, Pencil, Pill, Plus, Search, Trash2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import {
   Badge,
   Button,
   Card,
+  ConfirmDialog,
   DataTable,
   Input,
   Modal,
@@ -27,7 +28,7 @@ import {
 } from '@/components/ui';
 import { PageHeader } from '@/components/layouts/PageHeader';
 import { Can } from '@/components/Can';
-import { apiGet, apiGetRaw, apiPost, getApiErrorMessage } from '@/lib/apiClient';
+import { apiDelete, apiGet, apiGetRaw, apiPatch, apiPost, getApiErrorMessage } from '@/lib/apiClient';
 import { queryKeys } from '@/lib/queryClient';
 import { cn } from '@/lib/utils';
 import { useListQuery } from '@/hooks';
@@ -41,6 +42,8 @@ export default function MedicationsPage(): JSX.Element {
   });
 
   const [adjustTarget, setAdjustTarget] = useState<Medication | null>(null);
+  const [formTarget, setFormTarget] = useState<Medication | 'new' | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Medication | null>(null);
 
   const medicationsQuery = useQuery({
     queryKey: queryKeys.medications.all(filters),
@@ -75,6 +78,42 @@ export default function MedicationsPage(): JSX.Element {
       setAdjustTarget(null);
       void queryClient.invalidateQueries({ queryKey: ['medications'] });
       void queryClient.invalidateQueries({ queryKey: ['stock'] });
+    },
+    onError: (error) => toast.error(getApiErrorMessage(error)),
+  });
+
+  const invalidate = (): void => {
+    void queryClient.invalidateQueries({ queryKey: ['medications'] });
+    void queryClient.invalidateQueries({ queryKey: ['stock'] });
+  };
+
+  const createMutation = useMutation({
+    mutationFn: (payload: Record<string, unknown>) => apiPost<Medication>('/medications', payload),
+    onSuccess: () => {
+      toast.success('Médicament ajouté au catalogue.');
+      setFormTarget(null);
+      invalidate();
+    },
+    onError: (error) => toast.error(getApiErrorMessage(error)),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: Record<string, unknown> }) =>
+      apiPatch<Medication>(`/medications/${id}`, payload),
+    onSuccess: () => {
+      toast.success('Fiche du médicament mise à jour.');
+      setFormTarget(null);
+      invalidate();
+    },
+    onError: (error) => toast.error(getApiErrorMessage(error)),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => apiDelete(`/medications/${id}`),
+    onSuccess: () => {
+      toast.success('Médicament supprimé.');
+      setDeleteTarget(null);
+      invalidate();
     },
     onError: (error) => toast.error(getApiErrorMessage(error)),
   });
@@ -158,11 +197,34 @@ export default function MedicationsPage(): JSX.Element {
       header: '',
       align: 'right',
       render: (row) => (
-        <Can permission="stock:manage">
-          <Button size="sm" variant="secondary" onClick={() => setAdjustTarget(row)}>
-            Ajuster
-          </Button>
-        </Can>
+        <div className="flex justify-end gap-1">
+          <Can permission="stock:manage">
+            <Button size="sm" variant="secondary" onClick={() => setAdjustTarget(row)}>
+              Ajuster
+            </Button>
+          </Can>
+          <Can permission="medication:update">
+            <Button
+              size="sm"
+              variant="ghost"
+              aria-label="Modifier le médicament"
+              onClick={() => setFormTarget(row)}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+          </Can>
+          <Can permission="medication:delete">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950"
+              aria-label="Supprimer le médicament"
+              onClick={() => setDeleteTarget(row)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </Can>
+        </div>
       ),
     },
   ];
@@ -174,6 +236,13 @@ export default function MedicationsPage(): JSX.Element {
       <PageHeader
         title="Médicaments"
         subtitle="Catalogue de la pharmacie et niveaux de stock."
+        actions={
+          <Can permission="medication:create">
+            <Button size="sm" leftIcon={<Plus className="h-4 w-4" />} onClick={() => setFormTarget('new')}>
+              Nouveau médicament
+            </Button>
+          </Can>
+        }
       />
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -193,7 +262,7 @@ export default function MedicationsPage(): JSX.Element {
       </div>
 
       <Card className="p-4">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <Input
             placeholder="Nom ou fournisseur…"
             leftIcon={<Search className="h-4 w-4" />}
@@ -211,12 +280,22 @@ export default function MedicationsPage(): JSX.Element {
           <Select
             options={[
               { value: 'true', label: 'Stock faible uniquement' },
-              { value: 'true', label: 'Péremption proche' },
+              { value: 'false', label: 'Stock suffisant' },
             ]}
             placeholder="Tous les stocks"
             value={String(filters.lowStock ?? '')}
             onChange={(event) => update({ lowStock: event.target.value })}
             aria-label="Filtrer le stock"
+          />
+          <Select
+            options={[
+              { value: 'true', label: 'Périmés' },
+              { value: 'false', label: 'Non périmés' },
+            ]}
+            placeholder="Toutes les péremptions"
+            value={String(filters.expired ?? '')}
+            onChange={(event) => update({ expired: event.target.value })}
+            aria-label="Filtrer par péremption"
           />
           <Button variant="ghost" onClick={reset}>
             Réinitialiser
@@ -235,6 +314,13 @@ export default function MedicationsPage(): JSX.Element {
           onRetry={() => void medicationsQuery.refetch()}
           emptyTitle="Aucun médicament"
           emptyDescription="Aucune référence ne correspond aux filtres sélectionnés."
+          emptyAction={
+            <Can permission="medication:create">
+              <Button size="sm" leftIcon={<Plus className="h-4 w-4" />} onClick={() => setFormTarget('new')}>
+                Ajouter un médicament
+              </Button>
+            </Can>
+          }
           sort={sorting}
           onSortChange={(key, order) => update({ sort: key, order })}
         />
@@ -257,7 +343,201 @@ export default function MedicationsPage(): JSX.Element {
         isPending={adjustMutation.isPending}
         onSubmit={(payload) => adjustMutation.mutate(payload)}
       />
+
+      <MedicationFormModal
+        isOpen={formTarget !== null}
+        medication={formTarget !== null && formTarget !== 'new' ? formTarget : undefined}
+        isPending={createMutation.isPending || updateMutation.isPending}
+        onClose={() => setFormTarget(null)}
+        onSubmit={(payload) => {
+          if (formTarget !== null && formTarget !== 'new') {
+            updateMutation.mutate({ id: formTarget.id, payload });
+          } else {
+            createMutation.mutate(payload);
+          }
+        }}
+      />
+
+      <ConfirmDialog
+        isOpen={deleteTarget !== null}
+        title="Supprimer ce médicament ?"
+        message={
+          <>
+            La référence <span className="font-semibold">{deleteTarget?.name}</span> sera retirée du
+            catalogue. L’historique des mouvements de stock est conservé.
+          </>
+        }
+        confirmLabel="Supprimer"
+        isLoading={deleteMutation.isPending}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
+      />
     </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Création / modification d'une fiche                                        */
+/* -------------------------------------------------------------------------- */
+
+function MedicationFormModal({
+  isOpen,
+  medication,
+  isPending,
+  onClose,
+  onSubmit,
+}: {
+  isOpen: boolean;
+  medication?: Medication;
+  isPending: boolean;
+  onClose: () => void;
+  onSubmit: (payload: Record<string, unknown>) => void;
+}): JSX.Element {
+  const [values, setValues] = useState({
+    name: '',
+    category: '',
+    unit: '',
+    price: '',
+    stockQuantity: '0',
+    alertThreshold: '10',
+    expiryDate: '',
+    supplier: '',
+  });
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setValues({
+      name: medication?.name ?? '',
+      category: medication?.category ?? '',
+      unit: medication?.unit ?? '',
+      price: medication ? String(medication.price) : '',
+      stockQuantity: medication ? String(medication.stock_quantity) : '0',
+      alertThreshold: medication ? String(medication.alert_threshold) : '10',
+      expiryDate: medication?.expiry_date ? medication.expiry_date.slice(0, 10) : '',
+      supplier: medication?.supplier ?? '',
+    });
+  }, [isOpen, medication]);
+
+  const handleSubmit = (): void => {
+    if (values.name.trim().length < 2 || !values.category.trim() || !values.unit.trim()) {
+      toast.error('Nom, catégorie et unité sont obligatoires.');
+      return;
+    }
+    const price = Number(values.price);
+    if (!Number.isFinite(price) || price < 0) {
+      toast.error('Indiquez un prix valide.');
+      return;
+    }
+
+    const payload: Record<string, unknown> = {
+      name: values.name.trim(),
+      category: values.category.trim(),
+      unit: values.unit.trim(),
+      price,
+      alertThreshold: Number(values.alertThreshold) || 0,
+      ...(values.expiryDate ? { expiryDate: values.expiryDate } : {}),
+      ...(values.supplier.trim() ? { supplier: values.supplier.trim() } : {}),
+    };
+
+    // Le stock initial n'est accepté qu'à la création : ensuite il passe
+    // obligatoirement par un mouvement de stock.
+    if (!medication) {
+      payload.stockQuantity = Number(values.stockQuantity) || 0;
+    }
+
+    onSubmit(payload);
+  };
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={medication ? 'Modifier le médicament' : 'Nouveau médicament'}
+      description={
+        medication
+          ? `${medication.name} — stock actuel : ${medication.stock_quantity}`
+          : 'Le stock initial peut être saisi ici ; il sera ensuite géré par mouvements.'
+      }
+      isBusy={isPending}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            Annuler
+          </Button>
+          <Button onClick={handleSubmit} isLoading={isPending}>
+            {medication ? 'Enregistrer' : 'Ajouter au catalogue'}
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <Input
+          label="Nom"
+          required
+          value={values.name}
+          onChange={(event) => setValues({ ...values, name: event.target.value })}
+        />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Input
+            label="Catégorie"
+            required
+            placeholder="ex. Antalgique"
+            value={values.category}
+            onChange={(event) => setValues({ ...values, category: event.target.value })}
+          />
+          <Input
+            label="Unité"
+            required
+            placeholder="ex. comprimé, flacon"
+            value={values.unit}
+            onChange={(event) => setValues({ ...values, unit: event.target.value })}
+          />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Input
+            label="Prix unitaire (€)"
+            type="number"
+            min={0}
+            step="0.01"
+            required
+            value={values.price}
+            onChange={(event) => setValues({ ...values, price: event.target.value })}
+          />
+          <Input
+            label="Seuil d’alerte"
+            type="number"
+            min={0}
+            step={1}
+            value={values.alertThreshold}
+            onChange={(event) => setValues({ ...values, alertThreshold: event.target.value })}
+          />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {!medication && (
+            <Input
+              label="Stock initial"
+              type="number"
+              min={0}
+              step={1}
+              value={values.stockQuantity}
+              onChange={(event) => setValues({ ...values, stockQuantity: event.target.value })}
+              hint="Modifiable ensuite uniquement via les mouvements de stock."
+            />
+          )}
+          <Input
+            label="Date de péremption"
+            type="date"
+            value={values.expiryDate}
+            onChange={(event) => setValues({ ...values, expiryDate: event.target.value })}
+          />
+        </div>
+        <Input
+          label="Fournisseur"
+          value={values.supplier}
+          onChange={(event) => setValues({ ...values, supplier: event.target.value })}
+        />
+      </div>
+    </Modal>
   );
 }
 

@@ -1,0 +1,23 @@
+meta {
+  name: Medications
+}
+
+docs {
+  ## Dossier Medications
+
+  Pharmacie : catalogue des médicaments, alertes de stock, ajustements de stock (seule voie d'écriture manuelle) et historique des mouvements.
+
+  ### Requêtes
+
+  - `POST {{baseUrl}}/api/medications/{{medicationId}}/adjust-stock` — Adjust Stock
+  - `GET {{baseUrl}}/api/medications/categories` — Categories
+  - `POST {{baseUrl}}/api/medications` — Create
+  - `DELETE {{baseUrl}}/api/medications/{{medicationId}}` — Delete
+  - `GET {{baseUrl}}/api/medications/{{medicationId}}` — Get
+  - `GET {{baseUrl}}/api/medications?page=1&limit=20` — List
+  - `GET {{baseUrl}}/api/medications/low-stock` — Low Stock
+  - `GET {{baseUrl}}/api/medications/{{medicationId}}/movements?page=1&limit=20` — Movements
+  - `PATCH {{baseUrl}}/api/medications/{{medicationId}}` — Update
+
+  Toutes les requêtes utilisent l’environnement **Local** et l’en-tête `Authorization: Bearer {{accessToken}}` sauf mention contraire.
+}

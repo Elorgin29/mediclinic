@@ -1,0 +1,65 @@
+meta {
+  name: Login
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/auth/login
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "{{email}}",
+    "password": "{{password}}"
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+script:post-response {
+  const body = res.getBody();
+  const token = body?.data?.tokens?.accessToken;
+  
+  if (token) {
+    bru.setVar("accessToken", token);
+    bru.setVar("refreshToken", body.data.tokens.refreshToken || "");
+    bru.setVar("userEmail", body.data.user?.email || "");
+  }
+  
+  test("statut 200", () => expect(res.status).to.equal(200));
+  test("token d'accès présent", () => expect(token).to.be.a("string").and.not.empty);
+  test("utilisateur authentifié", () => expect(body?.data?.user?.email).to.be.a("string").and.not.empty);
+}
+
+tests {
+  const body = res.getBody();
+  const isJson = body && typeof body === "object" && !Array.isArray(body) && !Buffer.isBuffer(body);
+  
+  test("statut 2xx", () => expect(res.status).to.be.within(200, 299));
+  if (res.status !== 204 && isJson) {
+    test("enveloppe data", () => expect(body).to.have.property("data"));
+  }
+}
+
+docs {
+  ### Login
+
+  `POST {{baseUrl}}/api/auth/login`
+
+  Connexion email/mot de passe (public, 10 échecs max / 15 min). Le script post-response stocke `accessToken` et `refreshToken` dans les variables Bruno. Réponse `{ data: { user, tokens } }`.
+
+  **Authentification** : publique / optionnelle
+
+  **Réponse attendue** : 200 — enveloppe `{ data: ... }` (ou fichier binaire pour PDF/CSV)
+
+  **Contrôles automatiques** : assertion de statut + test `statut 2xx` + test d’enveloppe JSON (ignoré pour 204 et les fichiers).
+}

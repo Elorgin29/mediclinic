@@ -13,7 +13,7 @@ import {
   type Specialty,
 } from '@mediclinic/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Search, Stethoscope, UserPlus } from 'lucide-react';
+import { Search, Stethoscope, Trash2, UserPlus } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -21,6 +21,7 @@ import {
   Badge,
   Button,
   Card,
+  ConfirmDialog,
   DataTable,
   Input,
   Modal,
@@ -30,7 +31,7 @@ import {
 } from '@/components/ui';
 import { PageHeader } from '@/components/layouts/PageHeader';
 import { Can } from '@/components/Can';
-import { apiGet, apiGetRaw, apiPatch, apiPost, getApiErrorMessage } from '@/lib/apiClient';
+import { apiDelete, apiGet, apiGetRaw, apiPatch, apiPost, getApiErrorMessage } from '@/lib/apiClient';
 import { queryKeys } from '@/lib/queryClient';
 import { useListQuery } from '@/hooks';
 
@@ -43,6 +44,7 @@ export default function DoctorsAdminPage(): JSX.Element {
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Doctor | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Doctor | null>(null);
 
   const doctorsQuery = useQuery({
     queryKey: queryKeys.doctors.all(filters),
@@ -82,6 +84,16 @@ export default function DoctorsAdminPage(): JSX.Element {
     onSuccess: () => {
       toast.success('Profil médecin mis à jour.');
       setEditTarget(null);
+      refresh();
+    },
+    onError: (error) => toast.error(getApiErrorMessage(error)),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => apiDelete(`/doctors/${id}`),
+    onSuccess: () => {
+      toast.success('Médecin supprimé.');
+      setDeleteTarget(null);
       refresh();
     },
     onError: (error) => toast.error(getApiErrorMessage(error)),
@@ -150,11 +162,24 @@ export default function DoctorsAdminPage(): JSX.Element {
       header: '',
       align: 'right',
       render: (row) => (
-        <Can permission="doctor:update">
-          <Button size="sm" variant="secondary" onClick={() => setEditTarget(row)}>
-            Modifier
-          </Button>
-        </Can>
+        <div className="flex justify-end gap-1">
+          <Can permission="doctor:update">
+            <Button size="sm" variant="secondary" onClick={() => setEditTarget(row)}>
+              Modifier
+            </Button>
+          </Can>
+          <Can permission="doctor:delete">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950"
+              aria-label="Supprimer le médecin"
+              onClick={() => setDeleteTarget(row)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </Can>
+        </div>
       ),
     },
   ];
@@ -195,7 +220,10 @@ export default function DoctorsAdminPage(): JSX.Element {
             aria-label="Filtrer par spécialité"
           />
           <Select
-            options={[{ value: 'true', label: 'Accueille des patients' }]}
+            options={[
+              { value: 'true', label: 'Accueille des patients' },
+              { value: 'false', label: 'Complet' },
+            ]}
             placeholder="Tous les statuts"
             value={String(filters.accepting ?? '')}
             onChange={(event) => update({ accepting: event.target.value })}
@@ -255,6 +283,25 @@ export default function DoctorsAdminPage(): JSX.Element {
           if (editTarget) updateMutation.mutate(payload);
           else createMutation.mutate(payload);
         }}
+      />
+
+      <ConfirmDialog
+        isOpen={deleteTarget !== null}
+        title="Supprimer ce médecin ?"
+        message={
+          <>
+            Le profil de{' '}
+            <span className="font-semibold">
+              Dr {deleteTarget?.first_name} {deleteTarget?.last_name}
+            </span>{' '}
+            et son compte utilisateur seront définitivement supprimés. Les rendez-vous et consultations liés
+            doivent d’abord être traités.
+          </>
+        }
+        confirmLabel="Supprimer"
+        isLoading={deleteMutation.isPending}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
       />
     </div>
   );

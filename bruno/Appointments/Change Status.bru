@@ -1,0 +1,54 @@
+meta {
+  name: Change Status
+  type: http
+  seq: 8
+}
+
+patch {
+  url: {{baseUrl}}/api/appointments/{{appointmentId}}/status
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "status": "CONFIRMED",
+    "reason": "Confirmé par le secrétariat"
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  const body = res.getBody();
+  const isJson = body && typeof body === "object" && !Array.isArray(body) && !Buffer.isBuffer(body);
+  
+  test("statut 2xx", () => expect(res.status).to.be.within(200, 299));
+  if (res.status !== 204 && isJson) {
+    test("enveloppe data", () => expect(body).to.have.property("data"));
+  }
+}
+
+docs {
+  ### Change Status
+
+  `PATCH {{baseUrl}}/api/appointments/{{appointmentId}}/status`
+
+  Changement de statut d'un rendez-vous ; `reason` est obligatoire pour CANCELLED.
+
+  **Authentification** : `Authorization: Bearer {{accessToken}}`
+
+  **Réponse attendue** : 200 — enveloppe `{ data: ... }` (ou fichier binaire pour PDF/CSV)
+
+  **Contrôles automatiques** : assertion de statut + test `statut 2xx` + test d’enveloppe JSON (ignoré pour 204 et les fichiers).
+}

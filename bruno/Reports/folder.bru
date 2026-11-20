@@ -1,0 +1,20 @@
+meta {
+  name: Reports
+}
+
+docs {
+  ## Dossier Reports
+
+  Rapports et exports : chiffre d'affaires, rendez-vous, stock, activité, démographie et export CSV (BOM UTF-8, séparateur `;`).
+
+  ### Requêtes
+
+  - `GET {{baseUrl}}/api/reports/activity?from=2026-11-01&to=2026-11-30` — Activity
+  - `GET {{baseUrl}}/api/reports/appointments?from=2026-11-01&to=2026-11-30&groupBy=month` — Appointments
+  - `GET {{baseUrl}}/api/reports/export.csv?type=revenue&from=2026-11-01&to=2026-11-30` — Export CSV
+  - `GET {{baseUrl}}/api/reports/patients?from=2026-11-01&to=2026-11-30` — Patients
+  - `GET {{baseUrl}}/api/reports/revenue?from=2026-11-01&to=2026-11-30` — Revenue
+  - `GET {{baseUrl}}/api/reports/stock?from=2026-11-01&to=2026-11-30` — Stock
+
+  Toutes les requêtes utilisent l’environnement **Local** et l’en-tête `Authorization: Bearer {{accessToken}}` sauf mention contraire.
+}

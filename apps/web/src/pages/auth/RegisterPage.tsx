@@ -170,7 +170,7 @@ export default function RegisterPage(): JSX.Element {
             <div className="flex flex-col gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end dark:border-slate-800">
               <Link to="/connexion">
                 <Button variant="secondary" className="w-full sm:w-auto">
-                  J'ai déjà un compte
+                  J&apos;ai déjà un compte
                 </Button>
               </Link>
               <Button type="submit" isLoading={isSubmitting}>

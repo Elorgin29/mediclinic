@@ -1,0 +1,19 @@
+meta {
+  name: Payments
+}
+
+docs {
+  ## Dossier Payments
+
+  Encaissements : liste, paiements d'une facture, création (le trigger recalcule le solde et le statut) et suppression.
+
+  ### Requêtes
+
+  - `GET {{baseUrl}}/api/payments/invoice/{{invoiceId}}` — By Invoice
+  - `POST {{baseUrl}}/api/payments` — Create
+  - `DELETE {{baseUrl}}/api/payments/{{paymentId}}` — Delete
+  - `GET {{baseUrl}}/api/payments/{{paymentId}}` — Get
+  - `GET {{baseUrl}}/api/payments?page=1&limit=20` — List
+
+  Toutes les requêtes utilisent l’environnement **Local** et l’en-tête `Authorization: Bearer {{accessToken}}` sauf mention contraire.
+}

@@ -1,0 +1,24 @@
+meta {
+  name: Patients
+}
+
+docs {
+  ## Dossier Patients
+
+  Dossiers patients : profil du patient connecté, recherche, historique consolidé, rendez-vous, création du compte portail et gestion administrative.
+
+  ### Requêtes
+
+  - `GET {{baseUrl}}/api/patients/{{patientId}}/appointments?page=1&limit=20` — Appointments
+  - `POST {{baseUrl}}/api/patients/{{patientId}}/account` — Create Account
+  - `POST {{baseUrl}}/api/patients` — Create
+  - `DELETE {{baseUrl}}/api/patients/{{patientId}}` — Delete
+  - `GET {{baseUrl}}/api/patients/{{patientId}}` — Get
+  - `GET {{baseUrl}}/api/patients/{{patientId}}/history` — History
+  - `GET {{baseUrl}}/api/patients?page=1&limit=20&search=durand` — List
+  - `GET {{baseUrl}}/api/patients/me` — Me
+  - `PATCH {{baseUrl}}/api/patients/me` — Update Me
+  - `PATCH {{baseUrl}}/api/patients/{{patientId}}` — Update
+
+  Toutes les requêtes utilisent l’environnement **Local** et l’en-tête `Authorization: Bearer {{accessToken}}` sauf mention contraire.
+}

@@ -1,0 +1,61 @@
+meta {
+  name: Refresh
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/auth/refresh
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "refreshToken": "{{refreshToken}}"
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+script:post-response {
+  const body = res.getBody();
+  const tokens = body?.data?.tokens;
+  if (tokens?.accessToken) {
+    bru.setVar("accessToken", tokens.accessToken);
+    bru.setVar("refreshToken", tokens.refreshToken || "");
+  }
+  
+  test("statut 200", () => expect(res.status).to.equal(200));
+  test("nouveau token présent", () => expect(tokens?.accessToken).to.be.a("string").and.not.empty);
+}
+
+tests {
+  const body = res.getBody();
+  const isJson = body && typeof body === "object" && !Array.isArray(body) && !Buffer.isBuffer(body);
+  
+  test("statut 2xx", () => expect(res.status).to.be.within(200, 299));
+  if (res.status !== 204 && isJson) {
+    test("enveloppe data", () => expect(body).to.have.property("data"));
+  }
+}
+
+docs {
+  ### Refresh
+
+  `POST {{baseUrl}}/api/auth/refresh`
+
+  Renouvellement de session avec rotation du refresh token. Le script post-response remplace `accessToken` et `refreshToken` par les nouveaux jetons.
+
+  **Authentification** : publique / optionnelle
+
+  **Réponse attendue** : 200 — enveloppe `{ data: ... }` (ou fichier binaire pour PDF/CSV)
+
+  **Contrôles automatiques** : assertion de statut + test `statut 2xx` + test d’enveloppe JSON (ignoré pour 204 et les fichiers).
+}

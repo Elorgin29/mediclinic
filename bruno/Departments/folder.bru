@@ -1,0 +1,19 @@
+meta {
+  name: Departments
+}
+
+docs {
+  ## Dossier Departments
+
+  Référentiel des départements de la clinique, avec chef de département et nombre de médecins rattachés.
+
+  ### Requêtes
+
+  - `POST {{baseUrl}}/api/departments` — Create
+  - `DELETE {{baseUrl}}/api/departments/{{departmentId}}` — Delete
+  - `GET {{baseUrl}}/api/departments/{{departmentId}}` — Get
+  - `GET {{baseUrl}}/api/departments` — List
+  - `PATCH {{baseUrl}}/api/departments/{{departmentId}}` — Update
+
+  Toutes les requêtes utilisent l’environnement **Local** et l’en-tête `Authorization: Bearer {{accessToken}}` sauf mention contraire.
+}

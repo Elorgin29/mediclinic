@@ -8,7 +8,7 @@
 
 import { formatMoney } from '@mediclinic/shared';
 import { useQuery } from '@tanstack/react-query';
-import { BarChart3, Download, FileSpreadsheet, TrendingUp, Users, Wallet } from 'lucide-react';
+import { BarChart3, FileSpreadsheet, TrendingUp, Users, Wallet } from 'lucide-react';
 import { useState } from 'react';
 import {
   Bar,

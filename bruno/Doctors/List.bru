@@ -1,0 +1,49 @@
+meta {
+  name: List
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/doctors?page=1&limit=20&accepting=true
+  body: none
+  auth: bearer
+}
+
+params:query {
+  page: 1
+  limit: 20
+  accepting: true
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  const body = res.getBody();
+  const isJson = body && typeof body === "object" && !Array.isArray(body) && !Buffer.isBuffer(body);
+  
+  test("statut 2xx", () => expect(res.status).to.be.within(200, 299));
+  if (res.status !== 204 && isJson) {
+    test("enveloppe data", () => expect(body).to.have.property("data"));
+  }
+}
+
+docs {
+  ### List
+
+  `GET {{baseUrl}}/api/doctors?page=1&limit=20&accepting=true`
+
+  Liste paginée interne des médecins avec filtres `specialtyId`, `departmentId`, `accepting`.
+
+  **Authentification** : `Authorization: Bearer {{accessToken}}`
+
+  **Réponse attendue** : 200 — enveloppe `{ data: ... }` (ou fichier binaire pour PDF/CSV)
+
+  **Contrôles automatiques** : assertion de statut + test `statut 2xx` + test d’enveloppe JSON (ignoré pour 204 et les fichiers).
+}

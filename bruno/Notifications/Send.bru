@@ -1,0 +1,61 @@
+meta {
+  name: Send
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/notifications
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "userIds": [
+      4,
+      5,
+      6
+    ],
+    "title": "Réunion d'équipe",
+    "message": "Réunion mensuelle jeudi à 18h.",
+    "type": "INFO",
+    "link": "/admin"
+  }
+}
+
+assert {
+  res.status: eq 201
+}
+
+tests {
+  const body = res.getBody();
+  const isJson = body && typeof body === "object" && !Array.isArray(body) && !Buffer.isBuffer(body);
+  
+  test("statut 2xx", () => expect(res.status).to.be.within(200, 299));
+  if (res.status !== 204 && isJson) {
+    test("enveloppe data", () => expect(body).to.have.property("data"));
+  }
+}
+
+docs {
+  ### Send
+
+  `POST {{baseUrl}}/api/notifications`
+
+  Envoi administratif à une liste d'utilisateurs ou à tous (`userIds: "all"`).
+
+  **Authentification** : `Authorization: Bearer {{accessToken}}`
+
+  **Réponse attendue** : 201 — enveloppe `{ data: ... }` (ou fichier binaire pour PDF/CSV)
+
+  **Contrôles automatiques** : assertion de statut + test `statut 2xx` + test d’enveloppe JSON (ignoré pour 204 et les fichiers).
+}

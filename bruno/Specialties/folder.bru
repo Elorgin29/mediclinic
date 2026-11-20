@@ -1,0 +1,19 @@
+meta {
+  name: Specialties
+}
+
+docs {
+  ## Dossier Specialties
+
+  Référentiel des spécialités médicales (compteurs médecins/RV), avec création, modification et suppression protégée.
+
+  ### Requêtes
+
+  - `POST {{baseUrl}}/api/specialties` — Create
+  - `DELETE {{baseUrl}}/api/specialties/{{specialtyId}}` — Delete
+  - `GET {{baseUrl}}/api/specialties/{{specialtyId}}` — Get
+  - `GET {{baseUrl}}/api/specialties` — List
+  - `PATCH {{baseUrl}}/api/specialties/{{specialtyId}}` — Update
+
+  Toutes les requêtes utilisent l’environnement **Local** et l’en-tête `Authorization: Bearer {{accessToken}}` sauf mention contraire.
+}

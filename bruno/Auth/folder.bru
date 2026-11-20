@@ -1,0 +1,20 @@
+meta {
+  name: Auth
+}
+
+docs {
+  ## Dossier Auth
+
+  Authentification et sessions : connexion, inscription patient, renouvellement avec rotation, déconnexion, profil et changement de mot de passe.
+
+  ### Requêtes
+
+  - `POST {{baseUrl}}/api/auth/change-password` — Change Password
+  - `POST {{baseUrl}}/api/auth/login` — Login
+  - `POST {{baseUrl}}/api/auth/logout` — Logout
+  - `GET {{baseUrl}}/api/auth/me` — Me
+  - `POST {{baseUrl}}/api/auth/refresh` — Refresh
+  - `POST {{baseUrl}}/api/auth/register` — Register
+
+  Toutes les requêtes utilisent l’environnement **Local** et l’en-tête `Authorization: Bearer {{accessToken}}` sauf mention contraire.
+}

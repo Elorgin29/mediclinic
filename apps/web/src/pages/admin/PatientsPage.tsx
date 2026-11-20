@@ -1,21 +1,22 @@
 /**
  * Liste des patients (back-office).
  *
- * Recherche multicritère, pagination et accès au dossier complet. Les comptes
- * de démonstration contiennent 30 patients ; la recherche interroge le nom, le
+ * Recherche multicritère, pagination, création, modification et suppression
+ * d'un dossier, et accès au dossier complet. La recherche interroge le nom, le
  * prénom, l'email, le téléphone et le numéro d'assurance.
  */
 
 import { formatAge, formatDate, type Paginated, type Patient } from '@mediclinic/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Download, Plus, Search, Users } from 'lucide-react';
-import { useState } from 'react';
+import { Download, Pencil, Plus, Search, Trash2, Users } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import {
   Button,
   Card,
+  ConfirmDialog,
   DataTable,
   Input,
   Modal,
@@ -26,7 +27,7 @@ import {
 } from '@/components/ui';
 import { PageHeader } from '@/components/layouts/PageHeader';
 import { Can } from '@/components/Can';
-import { apiGetRaw, apiPost, getApiErrorMessage } from '@/lib/apiClient';
+import { apiDelete, apiGetRaw, apiPatch, apiPost, getApiErrorMessage } from '@/lib/apiClient';
 import { downloadPdf } from '@/lib/pdf';
 import { queryKeys } from '@/lib/queryClient';
 import { useListQuery } from '@/hooks';
@@ -38,7 +39,8 @@ export default function PatientsPage(): JSX.Element {
     gender: '',
   });
 
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [formTarget, setFormTarget] = useState<Patient | 'new' | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Patient | null>(null);
 
   const patientsQuery = useQuery({
     queryKey: queryKeys.patients.all(filters),
@@ -51,12 +53,37 @@ export default function PatientsPage(): JSX.Element {
     },
   });
 
+  const invalidate = (): void => {
+    void queryClient.invalidateQueries({ queryKey: ['patients'] });
+  };
+
   const createMutation = useMutation({
     mutationFn: (payload: Record<string, unknown>) => apiPost<Patient>('/patients', payload),
     onSuccess: () => {
       toast.success('Dossier patient créé.');
-      setIsCreateOpen(false);
-      void queryClient.invalidateQueries({ queryKey: ['patients'] });
+      setFormTarget(null);
+      invalidate();
+    },
+    onError: (error) => toast.error(getApiErrorMessage(error)),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: Record<string, unknown> }) =>
+      apiPatch<Patient>(`/patients/${id}`, payload),
+    onSuccess: () => {
+      toast.success('Dossier patient mis à jour.');
+      setFormTarget(null);
+      invalidate();
+    },
+    onError: (error) => toast.error(getApiErrorMessage(error)),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => apiDelete(`/patients/${id}`),
+    onSuccess: () => {
+      toast.success('Dossier patient supprimé.');
+      setDeleteTarget(null);
+      invalidate();
     },
     onError: (error) => toast.error(getApiErrorMessage(error)),
   });
@@ -135,6 +162,16 @@ export default function PatientsPage(): JSX.Element {
           <Button size="sm" variant="secondary" onClick={() => navigate(`/admin/patients/${row.id}`)}>
             Dossier
           </Button>
+          <Can permission="patient:update">
+            <Button
+              size="sm"
+              variant="ghost"
+              aria-label="Modifier le dossier"
+              onClick={() => setFormTarget(row)}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+          </Can>
           <Button
             size="sm"
             variant="ghost"
@@ -143,12 +180,24 @@ export default function PatientsPage(): JSX.Element {
           >
             <Download className="h-4 w-4" />
           </Button>
+          <Can permission="patient:delete">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950"
+              aria-label="Supprimer le dossier"
+              onClick={() => setDeleteTarget(row)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </Can>
         </div>
       ),
     },
   ];
 
   const meta = patientsQuery.data?.meta;
+  const isEdit = formTarget !== null && formTarget !== 'new';
 
   return (
     <div className="space-y-5">
@@ -157,7 +206,7 @@ export default function PatientsPage(): JSX.Element {
         subtitle={`${meta?.total ?? 0} dossier(s) patient enregistré(s) dans la clinique.`}
         actions={
           <Can permission="patient:create">
-            <Button size="sm" leftIcon={<Plus className="h-4 w-4" />} onClick={() => setIsCreateOpen(true)}>
+            <Button size="sm" leftIcon={<Plus className="h-4 w-4" />} onClick={() => setFormTarget('new')}>
               Nouveau patient
             </Button>
           </Can>
@@ -167,7 +216,7 @@ export default function PatientsPage(): JSX.Element {
       <Card className="p-4">
         <div className="grid gap-3 sm:grid-cols-[1fr_200px_auto]">
           <Input
-            placeholder="Nom, email, téléphone ou n° d’assurance’—"
+            placeholder="Nom, email, téléphone ou n° d’assurance…"
             leftIcon={<Search className="h-4 w-4" />}
             value={search}
             onChange={(event) => setSearch(event.target.value)}
@@ -204,7 +253,7 @@ export default function PatientsPage(): JSX.Element {
           emptyDescription="Aucun dossier ne correspond à votre recherche."
           emptyAction={
             <Can permission="patient:create">
-              <Button size="sm" leftIcon={<Users className="h-4 w-4" />} onClick={() => setIsCreateOpen(true)}>
+              <Button size="sm" leftIcon={<Users className="h-4 w-4" />} onClick={() => setFormTarget('new')}>
                 Créer un dossier
               </Button>
             </Can>
@@ -225,48 +274,122 @@ export default function PatientsPage(): JSX.Element {
         )}
       </Card>
 
-      <CreatePatientModal
-        isOpen={isCreateOpen}
-        onClose={() => setIsCreateOpen(false)}
-        isPending={createMutation.isPending}
-        onSubmit={(payload) => createMutation.mutate(payload)}
+      <PatientFormModal
+        isOpen={formTarget !== null}
+        patient={isEdit ? (formTarget as Patient) : undefined}
+        onClose={() => setFormTarget(null)}
+        isPending={createMutation.isPending || updateMutation.isPending}
+        onSubmit={(payload) => {
+          if (isEdit) {
+            updateMutation.mutate({ id: (formTarget as Patient).id, payload });
+          } else {
+            createMutation.mutate(payload);
+          }
+        }}
+      />
+
+      <ConfirmDialog
+        isOpen={deleteTarget !== null}
+        title="Supprimer ce dossier patient ?"
+        message={
+          <>
+            Le dossier de{' '}
+            <span className="font-semibold">
+              {deleteTarget?.first_name} {deleteTarget?.last_name}
+            </span>{' '}
+            sera définitivement supprimé. Cette action est impossible si le patient possède un
+            historique médical ou des factures.
+          </>
+        }
+        confirmLabel="Supprimer"
+        isLoading={deleteMutation.isPending}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
       />
     </div>
   );
 }
 
 /* -------------------------------------------------------------------------- */
-/* Formulaire de création                                                      */
+/* Formulaire de création / modification                                       */
 /* -------------------------------------------------------------------------- */
 
-function CreatePatientModal({
+interface PatientFormValues {
+  firstName: string;
+  lastName: string;
+  birthDate: string;
+  gender: string;
+  phone: string;
+  email: string;
+  address: string;
+  city: string;
+  postalCode: string;
+  bloodGroup: string;
+  allergies: string;
+  medicalHistory: string;
+  emergencyContactName: string;
+  emergencyContactPhone: string;
+  insuranceNumber: string;
+}
+
+const EMPTY_PATIENT: PatientFormValues = {
+  firstName: '',
+  lastName: '',
+  birthDate: '',
+  gender: 'FEMALE',
+  phone: '',
+  email: '',
+  address: '',
+  city: '',
+  postalCode: '',
+  bloodGroup: '',
+  allergies: '',
+  medicalHistory: '',
+  emergencyContactName: '',
+  emergencyContactPhone: '',
+  insuranceNumber: '',
+};
+
+function patientToValues(patient: Patient): PatientFormValues {
+  return {
+    firstName: patient.first_name,
+    lastName: patient.last_name,
+    birthDate: patient.birth_date.slice(0, 10),
+    gender: patient.gender,
+    phone: patient.phone ?? '',
+    email: patient.email ?? '',
+    address: patient.address ?? '',
+    city: patient.city ?? '',
+    postalCode: patient.postal_code ?? '',
+    bloodGroup: patient.blood_group ?? '',
+    allergies: patient.allergies ?? '',
+    medicalHistory: patient.medical_history ?? '',
+    emergencyContactName: patient.emergency_contact_name ?? '',
+    emergencyContactPhone: patient.emergency_contact_phone ?? '',
+    insuranceNumber: patient.insurance_number ?? '',
+  };
+}
+
+function PatientFormModal({
   isOpen,
+  patient,
   onClose,
   isPending,
   onSubmit,
 }: {
   isOpen: boolean;
+  patient?: Patient;
   onClose: () => void;
   isPending: boolean;
   onSubmit: (payload: Record<string, unknown>) => void;
 }): JSX.Element {
-  const [values, setValues] = useState({
-    firstName: '',
-    lastName: '',
-    birthDate: '',
-    gender: 'FEMALE',
-    phone: '',
-    email: '',
-    address: '',
-    city: '',
-    postalCode: '',
-    bloodGroup: '',
-    allergies: '',
-    medicalHistory: '',
-    emergencyContactName: '',
-    emergencyContactPhone: '',
-    insuranceNumber: '',
-  });
+  const [values, setValues] = useState<PatientFormValues>(EMPTY_PATIENT);
+
+  // Réinitialise le formulaire à chaque ouverture (création ou édition).
+  useEffect(() => {
+    if (!isOpen) return;
+    setValues(patient ? patientToValues(patient) : EMPTY_PATIENT);
+  }, [isOpen, patient]);
 
   const handleSubmit = (): void => {
     if (!values.firstName.trim() || !values.lastName.trim() || !values.birthDate) {
@@ -297,7 +420,8 @@ function CreatePatientModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Nouveau dossier patient"
+      title={patient ? 'Modifier le dossier patient' : 'Nouveau dossier patient'}
+      description={patient ? `Dossier #${patient.id} — ${patient.first_name} ${patient.last_name}` : undefined}
       size="lg"
       isBusy={isPending}
       footer={
@@ -306,7 +430,7 @@ function CreatePatientModal({
             Annuler
           </Button>
           <Button onClick={handleSubmit} isLoading={isPending}>
-            Créer le dossier
+            {patient ? 'Enregistrer' : 'Créer le dossier'}
           </Button>
         </>
       }

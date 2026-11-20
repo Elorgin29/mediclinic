@@ -1,0 +1,58 @@
+meta {
+  name: Public Booking
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/appointments/public
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "doctorId": 3,
+    "scheduledAt": "2026-12-02 09:00:00",
+    "firstName": "Pierre",
+    "lastName": "Lambert",
+    "email": "pierre.nouveau@email.fr",
+    "phone": "0341000002",
+    "birthDate": "1985-03-20",
+    "gender": "MALE",
+    "reason": "Douleurs persistantes au genou droit",
+    "type": "IN_PERSON"
+  }
+}
+
+assert {
+  res.status: eq 201
+}
+
+tests {
+  const body = res.getBody();
+  const isJson = body && typeof body === "object" && !Array.isArray(body) && !Buffer.isBuffer(body);
+  
+  test("statut 2xx", () => expect(res.status).to.be.within(200, 299));
+  if (res.status !== 204 && isJson) {
+    test("enveloppe data", () => expect(body).to.have.property("data"));
+  }
+}
+
+docs {
+  ### Public Booking
+
+  `POST {{baseUrl}}/api/appointments/public`
+
+  Prise de rendez-vous en ligne (public) : statut PENDING, notification aux réceptionnistes, création d'un dossier patient si l'email est inconnu.
+
+  **Authentification** : publique / optionnelle
+
+  **Réponse attendue** : 201 — enveloppe `{ data: ... }` (ou fichier binaire pour PDF/CSV)
+
+  **Contrôles automatiques** : assertion de statut + test `statut 2xx` + test d’enveloppe JSON (ignoré pour 204 et les fichiers).
+}

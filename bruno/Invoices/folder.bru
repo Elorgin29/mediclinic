@@ -1,0 +1,23 @@
+meta {
+  name: Invoices
+}
+
+docs {
+  ## Dossier Invoices
+
+  Facturation : factures, génération depuis une consultation, lignes, statuts, indicateurs financiers et PDF.
+
+  ### Requêtes
+
+  - `PATCH {{baseUrl}}/api/invoices/{{invoiceId}}/status` — Change Status
+  - `POST {{baseUrl}}/api/invoices` — Create
+  - `DELETE {{baseUrl}}/api/invoices/{{invoiceId}}` — Delete
+  - `POST {{baseUrl}}/api/invoices/from-consultation/{{consultationId}}` — From Consultation
+  - `GET {{baseUrl}}/api/invoices/{{invoiceId}}` — Get
+  - `GET {{baseUrl}}/api/invoices?page=1&limit=20` — List
+  - `GET {{baseUrl}}/api/invoices/me` — Me
+  - `GET {{baseUrl}}/api/invoices/stats` — Stats
+  - `PATCH {{baseUrl}}/api/invoices/{{invoiceId}}` — Update
+
+  Toutes les requêtes utilisent l’environnement **Local** et l’en-tête `Authorization: Bearer {{accessToken}}` sauf mention contraire.
+}

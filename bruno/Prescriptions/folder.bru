@@ -1,0 +1,21 @@
+meta {
+  name: Prescriptions
+}
+
+docs {
+  ## Dossier Prescriptions
+
+  Ordonnances : création transactionnelle avec lignes, dispensation avec écritures de stock, changement de statut et PDF.
+
+  ### Requêtes
+
+  - `GET {{baseUrl}}/api/prescriptions/patient/{{patientId}}` — By Patient
+  - `POST {{baseUrl}}/api/prescriptions` — Create
+  - `DELETE {{baseUrl}}/api/prescriptions/{{prescriptionId}}` — Delete
+  - `POST {{baseUrl}}/api/prescriptions/{{prescriptionId}}/dispense` — Dispense
+  - `GET {{baseUrl}}/api/prescriptions/{{prescriptionId}}` — Get
+  - `GET {{baseUrl}}/api/prescriptions?page=1&limit=20` — List
+  - `PATCH {{baseUrl}}/api/prescriptions/{{prescriptionId}}` — Update Status
+
+  Toutes les requêtes utilisent l’environnement **Local** et l’en-tête `Authorization: Bearer {{accessToken}}` sauf mention contraire.
+}

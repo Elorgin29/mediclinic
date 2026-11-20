@@ -1,0 +1,15 @@
+meta {
+  name: Infrastructure
+}
+
+docs {
+  ## Dossier Infrastructure
+
+  Endpoints d'infrastructure et de disponibilité, sans authentification (sonde de santé, fichiers statiques).
+
+  ### Requêtes
+
+  - `GET {{baseUrl}}/api/health` — Health
+
+  Toutes les requêtes utilisent l’environnement **Local** et l’en-tête `Authorization: Bearer {{accessToken}}` sauf mention contraire.
+}

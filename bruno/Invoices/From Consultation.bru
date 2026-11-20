@@ -1,0 +1,55 @@
+meta {
+  name: From Consultation
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/invoices/from-consultation/{{consultationId}}
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "extraAmount": 25,
+    "vatRate": 20,
+    "dueDate": "2027-01-15"
+  }
+}
+
+assert {
+  res.status: eq 201
+}
+
+tests {
+  const body = res.getBody();
+  const isJson = body && typeof body === "object" && !Array.isArray(body) && !Buffer.isBuffer(body);
+  
+  test("statut 2xx", () => expect(res.status).to.be.within(200, 299));
+  if (res.status !== 204 && isJson) {
+    test("enveloppe data", () => expect(body).to.have.property("data"));
+  }
+}
+
+docs {
+  ### From Consultation
+
+  `POST {{baseUrl}}/api/invoices/from-consultation/{{consultationId}}`
+
+  Génération automatique d'une facture depuis une consultation, avec montant complémentaire et TVA optionnels.
+
+  **Authentification** : `Authorization: Bearer {{accessToken}}`
+
+  **Réponse attendue** : 201 — enveloppe `{ data: ... }` (ou fichier binaire pour PDF/CSV)
+
+  **Contrôles automatiques** : assertion de statut + test `statut 2xx` + test d’enveloppe JSON (ignoré pour 204 et les fichiers).
+}

@@ -1,0 +1,21 @@
+meta {
+  name: Roles
+}
+
+docs {
+  ## Dossier Roles
+
+  RBAC — rôles applicatifs et matrice rôle/permissions : création de rôles personnalisés, mise à jour et remplacement intégral de la matrice.
+
+  ### Requêtes
+
+  - `POST {{baseUrl}}/api/roles` — Create
+  - `DELETE {{baseUrl}}/api/roles/{{roleId}}` — Delete
+  - `GET {{baseUrl}}/api/roles/{{roleId}}` — Get
+  - `GET {{baseUrl}}/api/roles` — List
+  - `GET {{baseUrl}}/api/roles/{{roleId}}/permissions` — Permissions
+  - `PUT {{baseUrl}}/api/roles/{{roleId}}/permissions` — Replace Permissions
+  - `PATCH {{baseUrl}}/api/roles/{{roleId}}` — Update
+
+  Toutes les requêtes utilisent l’environnement **Local** et l’en-tête `Authorization: Bearer {{accessToken}}` sauf mention contraire.
+}

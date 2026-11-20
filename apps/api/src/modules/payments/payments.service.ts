@@ -100,9 +100,6 @@ const SORTABLE_COLUMNS: Readonly<Record<string, string>> = {
   patient_name: 'pt.last_name',
 };
 
-/** Statuts de facture pour lesquels aucun encaissement n'est possible. */
-const NON_PAYABLE_STATUSES: readonly string[] = ['DRAFT', 'CANCELLED'];
-
 /** Tolérance de comparaison sur les montants DECIMAL (arrondi au centime). */
 const AMOUNT_SCALE = 0.005;
 

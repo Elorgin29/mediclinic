@@ -1,0 +1,51 @@
+meta {
+  name: Generic Document
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/pdf/{{docType}}/{{docId}}?token={{accessToken}}
+  body: none
+  auth: bearer
+}
+
+params:query {
+  token: {{accessToken}}
+}
+
+headers {
+  Accept: application/pdf
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  const body = res.getBody();
+  const isJson = body && typeof body === "object" && !Array.isArray(body) && !Buffer.isBuffer(body);
+  
+  test("statut 2xx", () => expect(res.status).to.be.within(200, 299));
+  if (res.status !== 204 && isJson) {
+    test("enveloppe data", () => expect(body).to.have.property("data"));
+  }
+}
+
+docs {
+  ### Generic Document
+
+  `GET {{baseUrl}}/api/pdf/{{docType}}/{{docId}}?token={{accessToken}}`
+
+  Document générique PDF inline. `docType` : patient, prescription, dispensation, consultation ou invoice. Le token peut aussi être fourni en query. Réponse binaire.
+
+  **Authentification** : `Authorization: Bearer {{accessToken}}`
+
+  **Réponse attendue** : 200 — enveloppe `{ data: ... }` (ou fichier binaire pour PDF/CSV)
+
+  **Contrôles automatiques** : assertion de statut + test `statut 2xx` + test d’enveloppe JSON (ignoré pour 204 et les fichiers).
+}

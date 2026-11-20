@@ -118,11 +118,46 @@ export const PATIENT_NAV: PatientNavItem[] = [
   { to: '/patient/profil', label: 'Mon profil', icon: UserCog },
 ];
 
-/** Liens du site public. */
+/** Liens principaux du site public (barre de navigation). */
 export const PUBLIC_NAV = [
   { to: '/', label: 'Accueil' },
   { to: '/medecins', label: 'Nos médecins' },
   { to: '/specialites', label: 'Spécialités' },
-  { to: '/rendez-vous', label: 'Prendre rendez-vous' },
-  { to: '/teleconsultation', label: 'Téléconsultation' },
+  { to: '/services', label: 'Services' },
+  { to: '/actualites', label: 'Actualités' },
+  { to: '/contact', label: 'Contact' },
+];
+
+/** Colonnes du pied de page public. */
+export const PUBLIC_FOOTER_NAV: Array<{ title: string; items: Array<{ to: string; label: string }> }> = [
+  {
+    title: 'Soins & parcours',
+    items: [
+      { to: '/medecins', label: 'Annuaire des médecins' },
+      { to: '/specialites', label: 'Spécialités' },
+      { to: '/services', label: 'Nos services' },
+      { to: '/rendez-vous', label: 'Prendre rendez-vous' },
+      { to: '/teleconsultation', label: 'Téléconsultation' },
+    ],
+  },
+  {
+    title: 'La clinique',
+    items: [
+      { to: '/a-propos', label: 'À propos' },
+      { to: '/actualites', label: 'Actualités santé' },
+      { to: '/faq', label: 'Questions fréquentes' },
+      { to: '/contact', label: 'Nous contacter' },
+      { to: '/urgences', label: 'Urgences 24h/24' },
+    ],
+  },
+  {
+    title: 'Informations',
+    items: [
+      { to: '/inscription', label: 'Créer un espace patient' },
+      { to: '/connexion', label: 'Espace patient' },
+      { to: '/mentions-legales', label: 'Mentions légales' },
+      { to: '/mentions-legales#confidentialite', label: 'Confidentialité' },
+      { to: '/mentions-legales#accessibilite', label: 'Accessibilité' },
+    ],
+  },
 ];

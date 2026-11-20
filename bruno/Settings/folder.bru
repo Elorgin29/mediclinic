@@ -1,0 +1,16 @@
+meta {
+  name: Settings
+}
+
+docs {
+  ## Dossier Settings
+
+  Paramètres de la clinique : lecture (sans secrets Zoom) et mise à jour partielle.
+
+  ### Requêtes
+
+  - `GET {{baseUrl}}/api/settings` — Get
+  - `PATCH {{baseUrl}}/api/settings` — Update
+
+  Toutes les requêtes utilisent l’environnement **Local** et l’en-tête `Authorization: Bearer {{accessToken}}` sauf mention contraire.
+}

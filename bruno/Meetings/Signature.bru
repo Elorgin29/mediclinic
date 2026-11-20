@@ -1,0 +1,47 @@
+meta {
+  name: Signature
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/api/meetings/{{meetingId}}/signature?role=0
+  body: none
+  auth: bearer
+}
+
+params:query {
+  role: 0
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  const body = res.getBody();
+  const isJson = body && typeof body === "object" && !Array.isArray(body) && !Buffer.isBuffer(body);
+  
+  test("statut 2xx", () => expect(res.status).to.be.within(200, 299));
+  if (res.status !== 204 && isJson) {
+    test("enveloppe data", () => expect(body).to.have.property("data"));
+  }
+}
+
+docs {
+  ### Signature
+
+  `GET {{baseUrl}}/api/meetings/{{meetingId}}/signature?role=0`
+
+  Signature Zoom SDK générée côté serveur ; `role` vaut 0 (participant) ou 1 (hôte).
+
+  **Authentification** : `Authorization: Bearer {{accessToken}}`
+
+  **Réponse attendue** : 200 — enveloppe `{ data: ... }` (ou fichier binaire pour PDF/CSV)
+
+  **Contrôles automatiques** : assertion de statut + test `statut 2xx` + test d’enveloppe JSON (ignoré pour 204 et les fichiers).
+}

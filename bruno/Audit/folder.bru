@@ -1,0 +1,18 @@
+meta {
+  name: Audit
+}
+
+docs {
+  ## Dossier Audit
+
+  Journal d'audit : consultation paginée, statistiques, détail et journalisation d'actions côté client.
+
+  ### Requêtes
+
+  - `POST {{baseUrl}}/api/audit` — Create
+  - `GET {{baseUrl}}/api/audit/{{auditId}}` — Get
+  - `GET {{baseUrl}}/api/audit?page=1&limit=20` — List
+  - `GET {{baseUrl}}/api/audit/stats` — Stats
+
+  Toutes les requêtes utilisent l’environnement **Local** et l’en-tête `Authorization: Bearer {{accessToken}}` sauf mention contraire.
+}

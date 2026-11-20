@@ -1,9 +1,9 @@
 /**
  * Gestion des rendez-vous (back-office).
  *
- * Vue liste avec filtres (statut, type, période, médecin), changement de statut
- * en ligne et création d'un rendez-vous. L'agenda du jour est accessible via le
- * même écran grâce au filtre de période.
+ * Vue liste avec filtres (statut, type, période, médecin), création,
+ * modification, suppression et changement de statut. L'agenda du jour est
+ * accessible via le filtre de période.
  */
 
 import {
@@ -16,16 +16,18 @@ import {
   type AppointmentStatus,
   type Doctor,
   type Paginated,
+  type Patient,
 } from '@mediclinic/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CalendarPlus, Filter, RefreshCw, Search } from 'lucide-react';
-import { useState } from 'react';
+import { CalendarPlus, Filter, Pencil, RefreshCw, Search, Trash2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 
 import {
   Button,
   Card,
+  ConfirmDialog,
   DataTable,
   Input,
   Modal,
@@ -37,12 +39,19 @@ import {
 } from '@/components/ui';
 import { PageHeader as Header } from '@/components/layouts/PageHeader';
 import { Can } from '@/components/Can';
-import { apiGetRaw, apiPatch, apiPost, getApiErrorMessage } from '@/lib/apiClient';
+import { PatientPicker } from '@/components/admin/PatientPicker';
+import { apiDelete, apiGetRaw, apiPatch, apiPost, getApiErrorMessage } from '@/lib/apiClient';
 import { queryKeys } from '@/lib/queryClient';
 import { useListQuery } from '@/hooks';
 
 /** Statuts vers lesquels une transition est proposée dans l'interface. */
 const NEXT_STATUSES: AppointmentStatus[] = [...APPOINTMENT_STATUSES];
+
+/** Convertit un horodatage API en valeur d'un `<input type="datetime-local">`. */
+function toDateTimeInput(value: string): string {
+  const normalized = value.includes('T') ? value : value.replace(' ', 'T');
+  return normalized.slice(0, 16);
+}
 
 export default function AppointmentsPage(): JSX.Element {
   const queryClient = useQueryClient();
@@ -53,7 +62,8 @@ export default function AppointmentsPage(): JSX.Element {
     to: '',
   });
 
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [formTarget, setFormTarget] = useState<Appointment | 'new' | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Appointment | null>(null);
   const [statusTarget, setStatusTarget] = useState<Appointment | null>(null);
   const [newStatus, setNewStatus] = useState<AppointmentStatus>('CONFIRMED');
   const [cancelReason, setCancelReason] = useState('');
@@ -77,6 +87,10 @@ export default function AppointmentsPage(): JSX.Element {
     queryFn: () => apiGetRaw<Paginated<Doctor>>('/doctors?limit=100'),
   });
 
+  const invalidate = (): void => {
+    void queryClient.invalidateQueries({ queryKey: ['appointments'] });
+  };
+
   /* ------------------------------------------------------------------ */
   /* Mutations                                                           */
   /* ------------------------------------------------------------------ */
@@ -84,13 +98,13 @@ export default function AppointmentsPage(): JSX.Element {
     mutationFn: () =>
       apiPatch<Appointment>(`/appointments/${statusTarget?.id}/status`, {
         status: newStatus,
-        ...(newStatus === 'CANCELLED' ? { cancelledReason: cancelReason } : {}),
+        ...(newStatus === 'CANCELLED' && cancelReason.trim() ? { reason: cancelReason.trim() } : {}),
       }),
     onSuccess: () => {
       toast.success('Statut du rendez-vous mis à jour.');
       setStatusTarget(null);
       setCancelReason('');
-      void queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      invalidate();
     },
     onError: (error) => toast.error(getApiErrorMessage(error)),
   });
@@ -99,8 +113,29 @@ export default function AppointmentsPage(): JSX.Element {
     mutationFn: (payload: Record<string, unknown>) => apiPost<Appointment>('/appointments', payload),
     onSuccess: () => {
       toast.success('Rendez-vous créé.');
-      setIsCreateOpen(false);
-      void queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      setFormTarget(null);
+      invalidate();
+    },
+    onError: (error) => toast.error(getApiErrorMessage(error)),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: Record<string, unknown> }) =>
+      apiPatch<Appointment>(`/appointments/${id}`, payload),
+    onSuccess: () => {
+      toast.success('Rendez-vous mis à jour.');
+      setFormTarget(null);
+      invalidate();
+    },
+    onError: (error) => toast.error(getApiErrorMessage(error)),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => apiDelete(`/appointments/${id}`),
+    onSuccess: () => {
+      toast.success('Rendez-vous supprimé.');
+      setDeleteTarget(null);
+      invalidate();
     },
     onError: (error) => toast.error(getApiErrorMessage(error)),
   });
@@ -170,9 +205,20 @@ export default function AppointmentsPage(): JSX.Element {
               onClick={() => {
                 setStatusTarget(row);
                 setNewStatus(row.status);
+                setCancelReason('');
               }}
             >
               Statut
+            </Button>
+          </Can>
+          <Can permission="appointment:update">
+            <Button
+              size="sm"
+              variant="ghost"
+              aria-label="Modifier le rendez-vous"
+              onClick={() => setFormTarget(row)}
+            >
+              <Pencil className="h-4 w-4" />
             </Button>
           </Can>
           <Link to={`/admin/patients/${row.patient_id}`}>
@@ -180,6 +226,17 @@ export default function AppointmentsPage(): JSX.Element {
               Dossier
             </Button>
           </Link>
+          <Can permission="appointment:delete">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950"
+              aria-label="Supprimer le rendez-vous"
+              onClick={() => setDeleteTarget(row)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </Can>
         </div>
       ),
     },
@@ -211,7 +268,7 @@ export default function AppointmentsPage(): JSX.Element {
               Actualiser
             </Button>
             <Can permission="appointment:create">
-              <Button size="sm" leftIcon={<CalendarPlus className="h-4 w-4" />} onClick={() => setIsCreateOpen(true)}>
+              <Button size="sm" leftIcon={<CalendarPlus className="h-4 w-4" />} onClick={() => setFormTarget('new')}>
                 Nouveau rendez-vous
               </Button>
             </Can>
@@ -245,7 +302,6 @@ export default function AppointmentsPage(): JSX.Element {
           />
           <Input
             type="date"
-            label=""
             value={String(filters.from ?? '')}
             onChange={(event) => update({ from: event.target.value })}
             aria-label="Date de début"
@@ -276,6 +332,13 @@ export default function AppointmentsPage(): JSX.Element {
           onRetry={() => void appointmentsQuery.refetch()}
           emptyTitle="Aucun rendez-vous"
           emptyDescription="Aucun rendez-vous ne correspond aux filtres sélectionnés."
+          emptyAction={
+            <Can permission="appointment:create">
+              <Button size="sm" leftIcon={<CalendarPlus className="h-4 w-4" />} onClick={() => setFormTarget('new')}>
+                Créer un rendez-vous
+              </Button>
+            </Can>
+          }
           sort={sorting}
           onSortChange={(key, order) => update({ sort: key, order })}
         />
@@ -334,65 +397,130 @@ export default function AppointmentsPage(): JSX.Element {
         </div>
       </Modal>
 
-      {/* Modale de création */}
-      <CreateAppointmentModal
-        isOpen={isCreateOpen}
-        onClose={() => setIsCreateOpen(false)}
+      <AppointmentFormModal
+        isOpen={formTarget !== null}
+        appointment={formTarget !== null && formTarget !== 'new' ? formTarget : undefined}
         doctors={doctorsQuery.data?.data ?? []}
-        isPending={createMutation.isPending}
-        onSubmit={(payload) => createMutation.mutate(payload)}
+        isPending={createMutation.isPending || updateMutation.isPending}
+        onClose={() => setFormTarget(null)}
+        onSubmit={(payload) => {
+          if (formTarget !== null && formTarget !== 'new') {
+            updateMutation.mutate({ id: formTarget.id, payload });
+          } else {
+            createMutation.mutate(payload);
+          }
+        }}
+      />
+
+      <ConfirmDialog
+        isOpen={deleteTarget !== null}
+        title="Supprimer ce rendez-vous ?"
+        message={
+          <>
+            Le rendez-vous de{' '}
+            <span className="font-semibold">{deleteTarget?.patient_name ?? 'ce patient'}</span> prévu le{' '}
+            <span className="font-semibold">
+              {deleteTarget ? formatDateTime(deleteTarget.scheduled_at) : ''}
+            </span>{' '}
+            sera définitivement supprimé.
+          </>
+        }
+        confirmLabel="Supprimer"
+        isLoading={deleteMutation.isPending}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
       />
     </div>
   );
 }
 
 /* -------------------------------------------------------------------------- */
-/* Formulaire de création                                                      */
+/* Formulaire de création / modification                                       */
 /* -------------------------------------------------------------------------- */
 
-function CreateAppointmentModal({
+function AppointmentFormModal({
   isOpen,
-  onClose,
+  appointment,
   doctors,
   isPending,
+  onClose,
   onSubmit,
 }: {
   isOpen: boolean;
-  onClose: () => void;
+  appointment?: Appointment;
   doctors: Doctor[];
   isPending: boolean;
+  onClose: () => void;
   onSubmit: (payload: Record<string, unknown>) => void;
 }): JSX.Element {
+  const [patient, setPatient] = useState<Patient | null>(null);
   const [values, setValues] = useState({
-    patientId: '',
     doctorId: '',
     scheduledAt: '',
     duration: '30',
     type: 'IN_PERSON',
+    status: 'SCHEDULED',
     reason: '',
+    notes: '',
   });
 
+  useEffect(() => {
+    if (!isOpen) return;
+    setPatient(null);
+    if (appointment) {
+      setValues({
+        doctorId: String(appointment.doctor_id),
+        scheduledAt: toDateTimeInput(appointment.scheduled_at),
+        duration: String(appointment.duration),
+        type: appointment.type,
+        status: appointment.status,
+        reason: appointment.reason ?? '',
+        notes: appointment.notes ?? '',
+      });
+    } else {
+      setValues({
+        doctorId: '',
+        scheduledAt: '',
+        duration: '30',
+        type: 'IN_PERSON',
+        status: 'SCHEDULED',
+        reason: '',
+        notes: '',
+      });
+    }
+  }, [isOpen, appointment]);
+
   const handleSubmit = (): void => {
-    if (!values.patientId || !values.doctorId || !values.scheduledAt) {
-      toast.error('Patient, médecin et date sont obligatoires.');
+    if (!appointment && !patient) {
+      toast.error('Sélectionnez un patient.');
+      return;
+    }
+    if (!values.doctorId || !values.scheduledAt) {
+      toast.error('Médecin et date sont obligatoires.');
       return;
     }
 
-    onSubmit({
-      patientId: Number(values.patientId),
+    const base = {
       doctorId: Number(values.doctorId),
       scheduledAt: values.scheduledAt.replace('T', ' '),
       duration: Number(values.duration),
       type: values.type,
-      reason: values.reason.trim() || null,
-    });
+      reason: values.reason.trim() || undefined,
+      notes: values.notes.trim() || undefined,
+    };
+
+    if (appointment) {
+      onSubmit({ ...base, status: values.status });
+    } else {
+      onSubmit({ ...base, patientId: patient!.id });
+    }
   };
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Nouveau rendez-vous"
+      title={appointment ? 'Modifier le rendez-vous' : 'Nouveau rendez-vous'}
       description="Le créneau est vérifié automatiquement : aucun double booking n’est possible."
       isBusy={isPending}
       footer={
@@ -401,21 +529,29 @@ function CreateAppointmentModal({
             Annuler
           </Button>
           <Button onClick={handleSubmit} isLoading={isPending}>
-            Créer le rendez-vous
+            {appointment ? 'Enregistrer' : 'Créer le rendez-vous'}
           </Button>
         </>
       }
     >
       <div className="space-y-4">
-        <Input
-          label="Identifiant du patient"
-          type="number"
-          required
-          min={1}
-          value={values.patientId}
-          onChange={(event) => setValues({ ...values, patientId: event.target.value })}
-          hint="Sélectionnable depuis la fiche patient."
-        />
+        {appointment ? (
+          <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-800 dark:bg-slate-950/40">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              Patient
+            </p>
+            <p className="mt-0.5 text-sm font-medium text-slate-900 dark:text-white">
+              {appointment.patient_name ?? `Dossier #${appointment.patient_id}`}
+            </p>
+          </div>
+        ) : (
+          <PatientPicker
+            value={patient}
+            onChange={setPatient}
+            required
+            hint="Recherchez un patient existant par nom, email ou téléphone."
+          />
+        )}
 
         <Select
           label="Médecin"
@@ -451,22 +587,42 @@ function CreateAppointmentModal({
           />
         </div>
 
-        <Select
-          label="Type de consultation"
-          options={APPOINTMENT_TYPES.map((type) => ({
-            value: type,
-            label: APPOINTMENT_TYPE_LABELS_FR[type],
-          }))}
-          value={values.type}
-          onChange={(event) => setValues({ ...values, type: event.target.value })}
-          hint="Une téléconsultation crée automatiquement une demande de visioconférence."
-        />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Select
+            label="Type de consultation"
+            options={APPOINTMENT_TYPES.map((type) => ({
+              value: type,
+              label: APPOINTMENT_TYPE_LABELS_FR[type],
+            }))}
+            value={values.type}
+            onChange={(event) => setValues({ ...values, type: event.target.value })}
+            hint="Une téléconsultation crée automatiquement une demande de visioconférence."
+          />
+          {appointment && (
+            <Select
+              label="Statut"
+              options={NEXT_STATUSES.map((status) => ({
+                value: status,
+                label: APPOINTMENT_STATUS_LABELS_FR[status],
+              }))}
+              value={values.status}
+              onChange={(event) => setValues({ ...values, status: event.target.value })}
+            />
+          )}
+        </div>
 
         <Textarea
           label="Motif"
-          rows={3}
+          rows={2}
           value={values.reason}
           onChange={(event) => setValues({ ...values, reason: event.target.value })}
+        />
+
+        <Textarea
+          label="Notes internes"
+          rows={2}
+          value={values.notes}
+          onChange={(event) => setValues({ ...values, notes: event.target.value })}
         />
       </div>
     </Modal>

@@ -8,24 +8,26 @@
 
 import {
   formatDate,
-  formatDateLong,
   SHIFT_STATUS_LABELS_FR,
+  SHIFT_STATUSES,
   SHIFT_TYPE_LABELS_FR,
+  SHIFT_TYPES,
   type Department,
   type Doctor,
   type Paginated,
   type ShiftCalendarEntry,
+  type ShiftStatus,
 } from '@mediclinic/shared';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { CalendarClock, ChevronLeft, ChevronRight, Download, Plus } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { CalendarClock, ChevronLeft, ChevronRight, Download, Plus, Trash2 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import {
   Badge,
   Button,
   Card,
-  EmptyState,
+  ConfirmDialog,
   ErrorState,
   Input,
   Modal,
@@ -36,7 +38,7 @@ import {
 } from '@/components/ui';
 import { PageHeader } from '@/components/layouts/PageHeader';
 import { Can } from '@/components/Can';
-import { apiGet, apiGetRaw, apiPost, getApiErrorMessage } from '@/lib/apiClient';
+import { apiDelete, apiGet, apiGetRaw, apiPatch, apiPost, getApiErrorMessage } from '@/lib/apiClient';
 import { downloadPdf } from '@/lib/pdf';
 import { queryKeys } from '@/lib/queryClient';
 import { cn, doctorColor } from '@/lib/utils';
@@ -86,6 +88,8 @@ export default function ShiftsPage(): JSX.Element {
   const queryClient = useQueryClient();
   const [cursor, setCursor] = useState(() => new Date());
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<ShiftCalendarEntry | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ShiftCalendarEntry | null>(null);
 
   const from = monthStart(cursor);
   const to = monthEnd(cursor);
@@ -110,6 +114,27 @@ export default function ShiftsPage(): JSX.Element {
     onSuccess: () => {
       toast.success('Garde planifiée.');
       setIsCreateOpen(false);
+      void queryClient.invalidateQueries({ queryKey: ['shifts'] });
+    },
+    onError: (error) => toast.error(getApiErrorMessage(error)),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: Record<string, unknown> }) =>
+      apiPatch<unknown>(`/shifts/${id}`, payload),
+    onSuccess: () => {
+      toast.success('Garde mise à jour.');
+      setEditTarget(null);
+      void queryClient.invalidateQueries({ queryKey: ['shifts'] });
+    },
+    onError: (error) => toast.error(getApiErrorMessage(error)),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => apiDelete(`/shifts/${id}`),
+    onSuccess: () => {
+      toast.success('Garde supprimée.');
+      setDeleteTarget(null);
       void queryClient.invalidateQueries({ queryKey: ['shifts'] });
     },
     onError: (error) => toast.error(getApiErrorMessage(error)),
@@ -250,14 +275,16 @@ export default function ShiftsPage(): JSX.Element {
 
                       <div className="space-y-1">
                         {shifts.slice(0, 3).map((shift) => (
-                          <div
+                          <button
                             key={shift.id}
-                            className="truncate rounded px-1 py-0.5 text-[10px] font-medium text-white"
+                            type="button"
+                            onClick={() => setEditTarget(shift)}
+                            className="block w-full truncate rounded px-1 py-0.5 text-left text-[10px] font-medium text-white transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-500"
                             style={{ backgroundColor: doctorColor(shift.doctor_id) }}
                             title={`${shift.doctor_name} — ${SHIFT_TYPE_LABELS_FR[shift.type]} ${shift.start_time}-${shift.end_time}`}
                           >
                             {shift.start_time} {shift.doctor_name?.replace('Dr ', '') ?? ''}
-                          </div>
+                          </button>
                         ))}
                         {shifts.length > 3 && (
                           <p className="px-1 text-[10px] text-slate-400">+{shifts.length - 3} autre(s)</p>
@@ -323,6 +350,36 @@ export default function ShiftsPage(): JSX.Element {
         departments={departmentsQuery.data ?? []}
         isPending={createMutation.isPending}
         onSubmit={(payload) => createMutation.mutate(payload)}
+      />
+
+      <EditShiftModal
+        shift={editTarget}
+        doctors={doctorsQuery.data?.data ?? []}
+        departments={departmentsQuery.data ?? []}
+        isPending={updateMutation.isPending}
+        onClose={() => setEditTarget(null)}
+        onSubmit={(payload) => editTarget && updateMutation.mutate({ id: editTarget.id, payload })}
+        onRequestDelete={() => {
+          setDeleteTarget(editTarget);
+          setEditTarget(null);
+        }}
+      />
+
+      <ConfirmDialog
+        isOpen={deleteTarget !== null}
+        title="Supprimer cette garde ?"
+        message={
+          <>
+            La garde de{' '}
+            <span className="font-semibold">{deleteTarget?.doctor_name ?? 'ce médecin'}</span> du{' '}
+            <span className="font-semibold">{deleteTarget ? formatDate(deleteTarget.start_at) : ''}</span> sera
+            définitivement supprimée du planning.
+          </>
+        }
+        confirmLabel="Supprimer"
+        isLoading={deleteMutation.isPending}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
       />
     </div>
   );
@@ -442,6 +499,178 @@ function CreateShiftModal({
           value={values.type}
           onChange={(event) => setValues({ ...values, type: event.target.value })}
         />
+
+        <Textarea
+          label="Notes"
+          rows={2}
+          value={values.notes}
+          onChange={(event) => setValues({ ...values, notes: event.target.value })}
+        />
+      </div>
+    </Modal>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Modification d'une garde                                                    */
+/* -------------------------------------------------------------------------- */
+
+/** Convertit un horodatage API en valeur d'un `<input type="datetime-local">`. */
+function toDateTimeInput(value: string): string {
+  return value.includes('T') ? value.slice(0, 16) : value.replace(' ', 'T').slice(0, 16);
+}
+
+function EditShiftModal({
+  shift,
+  doctors,
+  departments,
+  isPending,
+  onClose,
+  onSubmit,
+  onRequestDelete,
+}: {
+  shift: ShiftCalendarEntry | null;
+  doctors: Doctor[];
+  departments: Department[];
+  isPending: boolean;
+  onClose: () => void;
+  onSubmit: (payload: Record<string, unknown>) => void;
+  onRequestDelete: () => void;
+}): JSX.Element {
+  const [values, setValues] = useState({
+    doctorId: '',
+    departmentId: '',
+    startAt: '',
+    endAt: '',
+    type: 'DAY',
+    status: 'SCHEDULED' as ShiftStatus,
+    notes: '',
+  });
+
+  useEffect(() => {
+    if (!shift) return;
+    setValues({
+      doctorId: String(shift.doctor_id),
+      departmentId: String(shift.department_id),
+      startAt: toDateTimeInput(shift.start_at),
+      endAt: toDateTimeInput(shift.end_at),
+      type: shift.type,
+      status: shift.status,
+      notes: shift.notes ?? '',
+    });
+  }, [shift]);
+
+  const handleSubmit = (): void => {
+    if (!values.doctorId || !values.departmentId || !values.startAt || !values.endAt) {
+      toast.error('Médecin, département, début et fin sont obligatoires.');
+      return;
+    }
+    if (new Date(values.endAt) <= new Date(values.startAt)) {
+      toast.error('La fin de garde doit être postérieure au début.');
+      return;
+    }
+
+    onSubmit({
+      doctorId: Number(values.doctorId),
+      departmentId: Number(values.departmentId),
+      startAt: values.startAt.replace('T', ' '),
+      endAt: values.endAt.replace('T', ' '),
+      type: values.type,
+      status: values.status,
+      notes: values.notes.trim() || undefined,
+    });
+  };
+
+  return (
+    <Modal
+      isOpen={shift !== null}
+      onClose={onClose}
+      title="Modifier la garde"
+      description={
+        shift ? `${shift.doctor_name ?? 'Médecin'} — ${SHIFT_TYPE_LABELS_FR[shift.type]}` : undefined
+      }
+      isBusy={isPending}
+      footer={
+        <>
+          <Can permission="shift:delete">
+            <Button
+              variant="ghost"
+              className="mr-auto text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950"
+              leftIcon={<Trash2 className="h-4 w-4" />}
+              onClick={onRequestDelete}
+            >
+              Supprimer
+            </Button>
+          </Can>
+          <Button variant="secondary" onClick={onClose}>
+            Annuler
+          </Button>
+          <Button onClick={handleSubmit} isLoading={isPending}>
+            Enregistrer
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <Select
+          label="Médecin"
+          required
+          options={doctors.map((doctor) => ({
+            value: doctor.id,
+            label: `Dr ${doctor.first_name} ${doctor.last_name} — ${doctor.specialty_name ?? ''}`,
+          }))}
+          value={values.doctorId}
+          onChange={(event) => setValues({ ...values, doctorId: event.target.value })}
+        />
+
+        <Select
+          label="Département"
+          required
+          options={departments.map((department) => ({
+            value: department.id,
+            label: department.name,
+          }))}
+          value={values.departmentId}
+          onChange={(event) => setValues({ ...values, departmentId: event.target.value })}
+        />
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Input
+            label="Début"
+            type="datetime-local"
+            required
+            value={values.startAt}
+            onChange={(event) => setValues({ ...values, startAt: event.target.value })}
+          />
+          <Input
+            label="Fin"
+            type="datetime-local"
+            required
+            value={values.endAt}
+            onChange={(event) => setValues({ ...values, endAt: event.target.value })}
+          />
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Select
+            label="Type de garde"
+            options={SHIFT_TYPES.map((type) => ({
+              value: type,
+              label: SHIFT_TYPE_LABELS_FR[type],
+            }))}
+            value={values.type}
+            onChange={(event) => setValues({ ...values, type: event.target.value })}
+          />
+          <Select
+            label="Statut"
+            options={SHIFT_STATUSES.map((status) => ({
+              value: status,
+              label: SHIFT_STATUS_LABELS_FR[status],
+            }))}
+            value={values.status}
+            onChange={(event) => setValues({ ...values, status: event.target.value as ShiftStatus })}
+          />
+        </div>
 
         <Textarea
           label="Notes"

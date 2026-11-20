@@ -1,0 +1,23 @@
+meta {
+  name: Lab
+}
+
+docs {
+  ## Dossier Lab
+
+  Laboratoire : catalogue des analyses, demandes d'analyses, saisie des résultats et suivi par patient.
+
+  ### Requêtes
+
+  - `POST {{baseUrl}}/api/lab/requests` — Request Create
+  - `DELETE {{baseUrl}}/api/lab/requests/{{labRequestId}}` — Request Delete
+  - `GET {{baseUrl}}/api/lab/requests/{{labRequestId}}` — Request Get
+  - `PATCH {{baseUrl}}/api/lab/requests/{{labRequestId}}` — Request Update
+  - `GET {{baseUrl}}/api/lab/requests/patient/{{patientId}}` — Requests By Patient
+  - `GET {{baseUrl}}/api/lab/requests?page=1&limit=20` — Requests List
+  - `POST {{baseUrl}}/api/lab/tests` — Test Create
+  - `PATCH {{baseUrl}}/api/lab/tests/{{labTestId}}` — Test Update
+  - `GET {{baseUrl}}/api/lab/tests` — Tests List
+
+  Toutes les requêtes utilisent l’environnement **Local** et l’en-tête `Authorization: Bearer {{accessToken}}` sauf mention contraire.
+}

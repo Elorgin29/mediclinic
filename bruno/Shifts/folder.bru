@@ -1,0 +1,21 @@
+meta {
+  name: Shifts
+}
+
+docs {
+  ## Dossier Shifts
+
+  Gestion des gardes : planning groupé par jour/médecin, gardes du médecin connecté, création avec contrôle de chevauchement et PDF.
+
+  ### Requêtes
+
+  - `GET {{baseUrl}}/api/shifts/calendar?from=2026-11-01&to=2026-11-30` — Calendar
+  - `POST {{baseUrl}}/api/shifts` — Create
+  - `DELETE {{baseUrl}}/api/shifts/{{shiftId}}` — Delete
+  - `GET {{baseUrl}}/api/shifts/{{shiftId}}` — Get
+  - `GET {{baseUrl}}/api/shifts?page=1&limit=20` — List
+  - `GET {{baseUrl}}/api/shifts/me` — Me
+  - `PATCH {{baseUrl}}/api/shifts/{{shiftId}}` — Update
+
+  Toutes les requêtes utilisent l’environnement **Local** et l’en-tête `Authorization: Bearer {{accessToken}}` sauf mention contraire.
+}

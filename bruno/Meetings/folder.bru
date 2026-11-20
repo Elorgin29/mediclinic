@@ -1,0 +1,23 @@
+meta {
+  name: Meetings
+}
+
+docs {
+  ## Dossier Meetings
+
+  Téléconsultations Zoom simulées : demande, approbation, refus, annulation, jeton de connexion SDK et signature.
+
+  ### Requêtes
+
+  - `POST {{baseUrl}}/api/meetings/{{meetingId}}/approve` — Approve
+  - `POST {{baseUrl}}/api/meetings/{{meetingId}}/cancel` — Cancel
+  - `GET {{baseUrl}}/api/meetings/{{meetingId}}` — Get
+  - `GET {{baseUrl}}/api/meetings/{{meetingId}}/join-token` — Join Token
+  - `GET {{baseUrl}}/api/meetings?page=1&limit=20` — List
+  - `GET {{baseUrl}}/api/meetings/me` — Me
+  - `POST {{baseUrl}}/api/meetings/{{meetingId}}/reject` — Reject
+  - `POST {{baseUrl}}/api/meetings/request` — Request
+  - `GET {{baseUrl}}/api/meetings/{{meetingId}}/signature?role=0` — Signature
+
+  Toutes les requêtes utilisent l’environnement **Local** et l’en-tête `Authorization: Bearer {{accessToken}}` sauf mention contraire.
+}

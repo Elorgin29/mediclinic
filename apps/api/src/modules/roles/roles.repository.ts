@@ -92,6 +92,7 @@ export async function findPermissionsByRoleId(roleId: number): Promise<Permissio
      WHERE rp.role_id = ?
      ORDER BY p.resource ASC,
               FIELD(p.action, 'create', 'read', 'update', 'delete', 'manage') ASC`,
+    [roleId],
   );
 }
 

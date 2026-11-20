@@ -1,0 +1,17 @@
+meta {
+  name: Dashboard
+}
+
+docs {
+  ## Dossier Dashboard
+
+  Tableau de bord : indicateurs, séries de graphiques et dernières activités.
+
+  ### Requêtes
+
+  - `GET {{baseUrl}}/api/dashboard/activity?page=1&limit=20` — Activity
+  - `GET {{baseUrl}}/api/dashboard/charts` — Charts
+  - `GET {{baseUrl}}/api/dashboard/stats` — Stats
+
+  Toutes les requêtes utilisent l’environnement **Local** et l’en-tête `Authorization: Bearer {{accessToken}}` sauf mention contraire.
+}

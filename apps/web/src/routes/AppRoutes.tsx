@@ -28,6 +28,13 @@ import DoctorsPage from '@/pages/public/DoctorsPage';
 import SpecialtiesPage from '@/pages/public/SpecialtiesPage';
 import BookingPage from '@/pages/public/BookingPage';
 import TeleconsultationPage from '@/pages/public/TeleconsultationPage';
+import AboutPage from '@/pages/public/AboutPage';
+import ServicesPage from '@/pages/public/ServicesPage';
+import ContactPage from '@/pages/public/ContactPage';
+import FaqPage from '@/pages/public/FaqPage';
+import NewsPage from '@/pages/public/NewsPage';
+import ArticlePage from '@/pages/public/ArticlePage';
+import LegalPage from '@/pages/public/LegalPage';
 import LoginPage from '@/pages/auth/LoginPage';
 import RegisterPage from '@/pages/auth/RegisterPage';
 import { ForbiddenPage, NotFoundPage } from '@/pages/errors/ErrorPages';
@@ -87,6 +94,14 @@ export function AppRoutes(): JSX.Element {
         <Route path="specialites" element={<SpecialtiesPage />} />
         <Route path="rendez-vous" element={<BookingPage />} />
         <Route path="teleconsultation" element={<TeleconsultationPage />} />
+        <Route path="a-propos" element={<AboutPage />} />
+        <Route path="services" element={<ServicesPage />} />
+        <Route path="contact" element={<ContactPage />} />
+        <Route path="faq" element={<FaqPage />} />
+        <Route path="actualites" element={<NewsPage />} />
+        <Route path="actualites/:slug" element={<ArticlePage />} />
+        <Route path="mentions-legales" element={<LegalPage />} />
+        <Route path="urgences" element={<ContactPage />} />
       </Route>
 
       {/* ---------------------------------------------------------------- */}

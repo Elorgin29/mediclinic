@@ -1,0 +1,18 @@
+meta {
+  name: Stock
+}
+
+docs {
+  ## Dossier Stock
+
+  Journal de stock et indicateurs : mouvements IN/OUT, alertes consolidées (stock bas, péremption) et résumé agrégé.
+
+  ### Requêtes
+
+  - `GET {{baseUrl}}/api/stock/alerts` — Alerts
+  - `GET {{baseUrl}}/api/stock/movements/{{movementId}}` — Movement Get
+  - `GET {{baseUrl}}/api/stock/movements?page=1&limit=20` — Movements
+  - `GET {{baseUrl}}/api/stock/summary` — Summary
+
+  Toutes les requêtes utilisent l’environnement **Local** et l’en-tête `Authorization: Bearer {{accessToken}}` sauf mention contraire.
+}

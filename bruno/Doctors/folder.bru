@@ -1,0 +1,21 @@
+meta {
+  name: Doctors
+}
+
+docs {
+  ## Dossier Doctors
+
+  Profils médecins : annuaire public, liste interne filtrée, créneaux de disponibilité et gestion des profils.
+
+  ### Requêtes
+
+  - `GET {{baseUrl}}/api/doctors/{{doctorId}}/availability?date=2026-12-01` — Availability
+  - `POST {{baseUrl}}/api/doctors` — Create
+  - `DELETE {{baseUrl}}/api/doctors/{{doctorId}}` — Delete
+  - `GET {{baseUrl}}/api/doctors/{{doctorId}}` — Get
+  - `GET {{baseUrl}}/api/doctors?page=1&limit=20&accepting=true` — List
+  - `GET {{baseUrl}}/api/doctors/public?limit=20` — Public Directory
+  - `PATCH {{baseUrl}}/api/doctors/{{doctorId}}` — Update
+
+  Toutes les requêtes utilisent l’environnement **Local** et l’en-tête `Authorization: Bearer {{accessToken}}` sauf mention contraire.
+}

@@ -1,0 +1,68 @@
+meta {
+  name: Create
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/api/invoices
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "patientId": 5,
+    "consultationId": 12,
+    "vatRate": 20,
+    "dueDate": "2027-01-15",
+    "items": [
+      {
+        "label": "Consultation Cardiologie",
+        "quantity": 1,
+        "unitPrice": 70
+      },
+      {
+        "label": "Électrocardiogramme",
+        "quantity": 1,
+        "unitPrice": 35
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 201
+}
+
+tests {
+  const body = res.getBody();
+  const isJson = body && typeof body === "object" && !Array.isArray(body) && !Buffer.isBuffer(body);
+  
+  test("statut 2xx", () => expect(res.status).to.be.within(200, 299));
+  if (res.status !== 204 && isJson) {
+    test("enveloppe data", () => expect(body).to.have.property("data"));
+  }
+}
+
+docs {
+  ### Create
+
+  `POST {{baseUrl}}/api/invoices`
+
+  Création d'une facture ; le numéro et les totaux sont calculés par les triggers.
+
+  **Authentification** : `Authorization: Bearer {{accessToken}}`
+
+  **Réponse attendue** : 201 — enveloppe `{ data: ... }` (ou fichier binaire pour PDF/CSV)
+
+  **Contrôles automatiques** : assertion de statut + test `statut 2xx` + test d’enveloppe JSON (ignoré pour 204 et les fichiers).
+}

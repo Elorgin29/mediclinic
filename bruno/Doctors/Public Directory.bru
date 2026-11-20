@@ -1,0 +1,43 @@
+meta {
+  name: Public Directory
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/doctors/public?limit=20
+  body: none
+  auth: none
+}
+
+params:query {
+  limit: 20
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  const body = res.getBody();
+  const isJson = body && typeof body === "object" && !Array.isArray(body) && !Buffer.isBuffer(body);
+  
+  test("statut 2xx", () => expect(res.status).to.be.within(200, 299));
+  if (res.status !== 204 && isJson) {
+    test("enveloppe data", () => expect(body).to.have.property("data"));
+  }
+}
+
+docs {
+  ### Public Directory
+
+  `GET {{baseUrl}}/api/doctors/public?limit=20`
+
+  Annuaire public des médecins acceptant des patients (vue `v_doctor_directory`, aucune donnée sensible). Public.
+
+  **Authentification** : publique / optionnelle
+
+  **Réponse attendue** : 200 — enveloppe `{ data: ... }` (ou fichier binaire pour PDF/CSV)
+
+  **Contrôles automatiques** : assertion de statut + test `statut 2xx` + test d’enveloppe JSON (ignoré pour 204 et les fichiers).
+}

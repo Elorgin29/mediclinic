@@ -15,7 +15,7 @@ import {
   type PermissionResource,
 } from '@mediclinic/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { KeyRound, Lock, Save, ShieldCheck } from 'lucide-react';
+import { KeyRound, Lock, Pencil, Plus, Save, ShieldCheck, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -25,14 +25,18 @@ import {
   Card,
   CardBody,
   CardHeader,
+  ConfirmDialog,
   EmptyState,
   ErrorState,
+  Input,
+  Modal,
   Spinner,
   StatCard,
+  Textarea,
 } from '@/components/ui';
 import { PageHeader } from '@/components/layouts/PageHeader';
 import { Can } from '@/components/Can';
-import { apiGet, apiPut, getApiErrorMessage } from '@/lib/apiClient';
+import { apiDelete, apiGet, apiPatch, apiPost, apiPut, getApiErrorMessage } from '@/lib/apiClient';
 import { queryKeys } from '@/lib/queryClient';
 import { cn } from '@/lib/utils';
 
@@ -40,6 +44,7 @@ interface RoleSummary {
   id: number;
   code: string;
   name: string;
+  description?: string | null;
   is_system: boolean;
 }
 
@@ -59,6 +64,8 @@ export default function RolesPage(): JSX.Element {
   const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null);
   /** Identifiants de permissions cochés pour le rôle courant. */
   const [draft, setDraft] = useState<Set<number>>(new Set());
+  const [roleTarget, setRoleTarget] = useState<RoleSummary | 'new' | null>(null);
+  const [deleteRoleTarget, setDeleteRoleTarget] = useState<RoleSummary | null>(null);
 
   const matrixQuery = useQuery({
     queryKey: queryKeys.roles.matrix,
@@ -123,6 +130,44 @@ export default function RolesPage(): JSX.Element {
     });
   };
 
+  const invalidateRoles = (): void => {
+    void queryClient.invalidateQueries({ queryKey: ['roles'] });
+    void queryClient.invalidateQueries({ queryKey: ['permissions'] });
+  };
+
+  const createRoleMutation = useMutation({
+    mutationFn: (payload: Record<string, unknown>) => apiPost<RoleSummary>('/roles', payload),
+    onSuccess: (role) => {
+      toast.success('Rôle créé.');
+      setRoleTarget(null);
+      invalidateRoles();
+      setSelectedRoleId(role.id);
+    },
+    onError: (error) => toast.error(getApiErrorMessage(error)),
+  });
+
+  const updateRoleMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: Record<string, unknown> }) =>
+      apiPatch<RoleSummary>(`/roles/${id}`, payload),
+    onSuccess: () => {
+      toast.success('Rôle mis à jour.');
+      setRoleTarget(null);
+      invalidateRoles();
+    },
+    onError: (error) => toast.error(getApiErrorMessage(error)),
+  });
+
+  const deleteRoleMutation = useMutation({
+    mutationFn: (id: number) => apiDelete(`/roles/${id}`),
+    onSuccess: () => {
+      toast.success('Rôle supprimé.');
+      setDeleteRoleTarget(null);
+      setSelectedRoleId(null);
+      invalidateRoles();
+    },
+    onError: (error) => toast.error(getApiErrorMessage(error)),
+  });
+
   /** Coche ou décoche toutes les permissions d'une ressource. */
   const toggleResource = (resource: PermissionResource): void => {
     const ids = [...(grouped.find(([key]) => key === resource)?.[1].values() ?? [])].map(
@@ -180,17 +225,29 @@ export default function RolesPage(): JSX.Element {
         title="Rôles & permissions"
         subtitle="Matrice de contrôle d’accès : chaque case accorde une action précise sur une ressource."
         actions={
-          <Can permission="role:manage">
-            <Button
-              size="sm"
-              leftIcon={<Save className="h-4 w-4" />}
-              onClick={() => saveMutation.mutate()}
-              isLoading={saveMutation.isPending}
-              disabled={!isDirty || selectedRole === null}
-            >
-              Enregistrer
-            </Button>
-          </Can>
+          <>
+            <Can permission="role:create">
+              <Button
+                size="sm"
+                variant="secondary"
+                leftIcon={<Plus className="h-4 w-4" />}
+                onClick={() => setRoleTarget('new')}
+              >
+                Nouveau rôle
+              </Button>
+            </Can>
+            <Can permission="role:manage">
+              <Button
+                size="sm"
+                leftIcon={<Save className="h-4 w-4" />}
+                onClick={() => saveMutation.mutate()}
+                isLoading={saveMutation.isPending}
+                disabled={!isDirty || selectedRole === null}
+              >
+                Enregistrer
+              </Button>
+            </Can>
+          </>
         }
       />
 
@@ -214,12 +271,12 @@ export default function RolesPage(): JSX.Element {
               const isActive = role.id === selectedRoleId;
 
               return (
-                <li key={role.id}>
+                <li key={role.id} className="group flex items-center gap-1">
                   <button
                     type="button"
                     onClick={() => setSelectedRoleId(role.id)}
                     className={cn(
-                      'flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors',
+                      'flex min-w-0 flex-1 items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors',
                       isActive
                         ? 'bg-brand-50 text-brand-800 dark:bg-brand-950 dark:text-brand-200'
                         : 'text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800',
@@ -235,6 +292,29 @@ export default function RolesPage(): JSX.Element {
                       {count}
                     </span>
                   </button>
+                  <Can permission="role:update">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      aria-label={`Modifier ${role.name}`}
+                      onClick={() => setRoleTarget(role)}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                  </Can>
+                  {!role.is_system && (
+                    <Can permission="role:delete">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950"
+                        aria-label={`Supprimer ${role.name}`}
+                        onClick={() => setDeleteRoleTarget(role)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </Can>
+                  )}
                 </li>
               );
             })}
@@ -370,6 +450,129 @@ export default function RolesPage(): JSX.Element {
           droits.
         </p>
       </Card>
+
+      <RoleFormModal
+        isOpen={roleTarget !== null}
+        role={roleTarget !== null && roleTarget !== 'new' ? roleTarget : undefined}
+        isPending={createRoleMutation.isPending || updateRoleMutation.isPending}
+        onClose={() => setRoleTarget(null)}
+        onSubmit={(payload) => {
+          if (roleTarget !== null && roleTarget !== 'new') {
+            updateRoleMutation.mutate({ id: roleTarget.id, payload });
+          } else {
+            createRoleMutation.mutate(payload);
+          }
+        }}
+      />
+
+      <ConfirmDialog
+        isOpen={deleteRoleTarget !== null}
+        title="Supprimer ce rôle ?"
+        message={
+          <>
+            Le rôle <span className="font-semibold">{deleteRoleTarget?.name}</span> et ses permissions seront
+            définitivement supprimés. Les utilisateurs qui y sont rattachés devront être réaffectés.
+          </>
+        }
+        confirmLabel="Supprimer"
+        isLoading={deleteRoleMutation.isPending}
+        onCancel={() => setDeleteRoleTarget(null)}
+        onConfirm={() => deleteRoleTarget && deleteRoleMutation.mutate(deleteRoleTarget.id)}
+      />
     </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Création / modification d'un rôle                                           */
+/* -------------------------------------------------------------------------- */
+
+function RoleFormModal({
+  isOpen,
+  role,
+  isPending,
+  onClose,
+  onSubmit,
+}: {
+  isOpen: boolean;
+  role?: RoleSummary;
+  isPending: boolean;
+  onClose: () => void;
+  onSubmit: (payload: Record<string, unknown>) => void;
+}): JSX.Element {
+  const [values, setValues] = useState({ code: '', name: '', description: '' });
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setValues({
+      code: role?.code ?? '',
+      name: role?.name ?? '',
+      description: role?.description ?? '',
+    });
+  }, [isOpen, role]);
+
+  const handleSubmit = (): void => {
+    if (values.name.trim().length < 2) {
+      toast.error('Le nom du rôle est obligatoire.');
+      return;
+    }
+    if (!role && !/^[A-Z][A-Z0-9_]*$/.test(values.code.trim())) {
+      toast.error('Le code doit être en MAJUSCULES, avec des underscores (ex. ASSISTANT_RH).');
+      return;
+    }
+
+    onSubmit({
+      ...(role ? {} : { code: values.code.trim() }),
+      name: values.name.trim(),
+      ...(values.description.trim() ? { description: values.description.trim() } : {}),
+    });
+  };
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={role ? 'Modifier le rôle' : 'Nouveau rôle'}
+      description={
+        role
+          ? 'Le code du rôle est immuable ; seuls le nom et la description peuvent être modifiés.'
+          : 'Créez un rôle personnalisé puis attribuez-lui des permissions dans la matrice.'
+      }
+      isBusy={isPending}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            Annuler
+          </Button>
+          <Button onClick={handleSubmit} isLoading={isPending}>
+            {role ? 'Enregistrer' : 'Créer le rôle'}
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <Input
+          label="Code"
+          required={!role}
+          disabled={Boolean(role)}
+          placeholder="ex. ASSISTANT_RH"
+          value={values.code}
+          onChange={(event) => setValues({ ...values, code: event.target.value.toUpperCase() })}
+          hint={role ? 'Le code ne peut plus être modifié.' : 'MAJUSCULES et underscores uniquement.'}
+        />
+        <Input
+          label="Nom"
+          required
+          value={values.name}
+          onChange={(event) => setValues({ ...values, name: event.target.value })}
+        />
+        <Textarea
+          label="Description"
+          rows={3}
+          value={values.description}
+          onChange={(event) => setValues({ ...values, description: event.target.value })}
+        />
+      </div>
+    </Modal>
   );
 }

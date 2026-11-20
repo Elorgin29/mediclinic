@@ -40,7 +40,6 @@ import {
   Button,
   Card,
   CardBody,
-  CardHeader,
   EmptyState,
   ErrorState,
   SkeletonText,

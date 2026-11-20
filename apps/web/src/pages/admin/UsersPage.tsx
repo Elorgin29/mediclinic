@@ -14,7 +14,7 @@ import {
   type User,
 } from '@mediclinic/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { KeyRound, Search, ShieldCheck, UserPlus, UserX } from 'lucide-react';
+import { KeyRound, Search, ShieldCheck, Trash2, UserCheck, UserPlus, UserX } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -22,6 +22,7 @@ import {
   Badge,
   Button,
   Card,
+  ConfirmDialog,
   DataTable,
   Input,
   Modal,
@@ -32,7 +33,7 @@ import {
 } from '@/components/ui';
 import { PageHeader } from '@/components/layouts/PageHeader';
 import { Can } from '@/components/Can';
-import { apiGet, apiGetRaw, apiPatch, apiPost, getApiErrorMessage } from '@/lib/apiClient';
+import { apiDelete, apiGet, apiGetRaw, apiPatch, apiPost, getApiErrorMessage } from '@/lib/apiClient';
 import { queryKeys } from '@/lib/queryClient';
 import { initialsFrom } from '@/lib/utils';
 import { useListQuery } from '@/hooks';
@@ -46,6 +47,7 @@ export default function UsersPage(): JSX.Element {
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<User | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
 
   const usersQuery = useQuery({
     queryKey: queryKeys.users.all(filters),
@@ -92,6 +94,25 @@ export default function UsersPage(): JSX.Element {
     mutationFn: (userId: number) => apiPatch<User>(`/users/${userId}`, { isActive: false }),
     onSuccess: () => {
       toast.success('Compte désactivé.');
+      refresh();
+    },
+    onError: (error) => toast.error(getApiErrorMessage(error)),
+  });
+
+  const activateMutation = useMutation({
+    mutationFn: (userId: number) => apiPatch<User>(`/users/${userId}`, { isActive: true }),
+    onSuccess: () => {
+      toast.success('Compte réactivé.');
+      refresh();
+    },
+    onError: (error) => toast.error(getApiErrorMessage(error)),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (userId: number) => apiDelete(`/users/${userId}`),
+    onSuccess: () => {
+      toast.success('Compte supprimé.');
+      setDeleteTarget(null);
       refresh();
     },
     onError: (error) => toast.error(getApiErrorMessage(error)),
@@ -177,14 +198,35 @@ export default function UsersPage(): JSX.Element {
             </Button>
           </Can>
           <Can permission="user:delete">
+            {row.is_active ? (
+              <Button
+                size="sm"
+                variant="ghost"
+                aria-label="Désactiver le compte"
+                onClick={() => deactivateMutation.mutate(row.id)}
+              >
+                <UserX className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                variant="ghost"
+                aria-label="Réactiver le compte"
+                onClick={() => activateMutation.mutate(row.id)}
+              >
+                <UserCheck className="h-4 w-4" />
+              </Button>
+            )}
+          </Can>
+          <Can permission="user:delete">
             <Button
               size="sm"
               variant="ghost"
-              aria-label="Désactiver le compte"
-              disabled={!row.is_active}
-              onClick={() => deactivateMutation.mutate(row.id)}
+              className="text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950"
+              aria-label="Supprimer le compte"
+              onClick={() => setDeleteTarget(row)}
             >
-              <UserX className="h-4 w-4" />
+              <Trash2 className="h-4 w-4" />
             </Button>
           </Can>
         </div>
@@ -297,6 +339,25 @@ export default function UsersPage(): JSX.Element {
           if (editTarget) updateMutation.mutate(payload);
           else createMutation.mutate(payload);
         }}
+      />
+
+      <ConfirmDialog
+        isOpen={deleteTarget !== null}
+        title="Supprimer ce compte ?"
+        message={
+          <>
+            Le compte de{' '}
+            <span className="font-semibold">
+              {deleteTarget?.first_name} {deleteTarget?.last_name}
+            </span>{' '}
+            ({deleteTarget?.email}) sera définitivement supprimé. Préférez la désactivation si le collaborateur
+            peut revenir.
+          </>
+        }
+        confirmLabel="Supprimer"
+        isLoading={deleteMutation.isPending}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
       />
     </div>
   );
