@@ -39,10 +39,17 @@ function sendDocument(
     userAgent: context.userAgent,
   });
 
+  // `filename` reste ASCII pour les anciens clients ; `filename*` transporte
+  // la version UTF-8 (RFC 5987) si un nom de document contient des accents.
+  const asciiName = document.filename.replace(/[^\x20-\x7e]/g, '_').replace(/"/g, '');
   req.res?.setHeader('Content-Type', 'application/pdf');
-  req.res?.setHeader('Content-Disposition', `${disposition}; filename="${document.filename}"`);
+  req.res?.setHeader(
+    'Content-Disposition',
+    `${disposition}; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(document.filename)}`,
+  );
   req.res?.setHeader('Content-Length', String(document.buffer.length));
   req.res?.setHeader('Cache-Control', 'private, no-store');
+  req.res?.setHeader('X-Content-Type-Options', 'nosniff');
   req.res?.send(document.buffer);
 }
 

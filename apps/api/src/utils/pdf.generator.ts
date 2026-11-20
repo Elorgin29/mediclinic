@@ -54,10 +54,10 @@ function truncate(doc: PDFKit.PDFDocument, text: string, maxWidth: number): stri
   if (doc.widthOfString(text) <= maxWidth) return text;
 
   let result = text;
-  while (result.length > 1 && doc.widthOfString(`${result}…`) > maxWidth) {
+  while (result.length > 1 && doc.widthOfString(`${result}...`) > maxWidth) {
     result = result.slice(0, -1);
   }
-  return `${result}…`;
+  return `${result}...`;
 }
 
 /** Vérifie qu'un logo exploitable existe ; renvoie son chemin absolu ou `null`. */
@@ -163,14 +163,25 @@ function drawMonogram(doc: PDFKit.PDFDocument, top: number): void {
  */
 function drawFooters(doc: PDFKit.PDFDocument, documentTitle: string): void {
   const range = doc.bufferedPageRange();
+  const savedY = doc.y;
+  const footerY = PAGE_HEIGHT - MARGIN + 8;
+  const editedAt = formatDateTime(new Date());
 
   for (let index = 0; index < range.count; index += 1) {
     doc.switchToPage(range.start + index);
 
-    const y = PAGE_HEIGHT - MARGIN + 8;
+    // Le pied de page se dessine dans la marge basse (zone réservée, hors du
+    // flux du contenu). PDFKit déclenche sinon un saut de page dès que `doc.y`
+    // dépasse `hauteur - marge basse` : on neutralise temporairement cette
+    // limite pour chaque page, puis on la restaure immédiatement.
+    const page = doc.page;
+    const bottomMargin = page.margins.bottom;
+    page.margins.bottom = 0;
+    doc.y = MARGIN;
+
     doc
-      .moveTo(MARGIN, y - 8)
-      .lineTo(PAGE_WIDTH - MARGIN, y - 8)
+      .moveTo(MARGIN, footerY - 8)
+      .lineTo(PAGE_WIDTH - MARGIN, footerY - 8)
       .lineWidth(0.5)
       .strokeColor(HAIRLINE)
       .stroke();
@@ -179,12 +190,12 @@ function drawFooters(doc: PDFKit.PDFDocument, documentTitle: string): void {
       .fillColor(MUTED)
       .font('Helvetica')
       .fontSize(7.5)
-      .text(`Page ${index + 1} / ${range.count}`, MARGIN, y, { width: 120 })
-      .text(`Édité le ${formatDateTime(new Date())}`, MARGIN, y, {
+      .text(`Page ${index + 1} / ${range.count}`, MARGIN, footerY, { width: 120 })
+      .text(`Édité le ${editedAt}`, MARGIN, footerY, {
         width: CONTENT_WIDTH,
         align: 'center',
       })
-      .text('Document confidentiel — usage médical', MARGIN, y, {
+      .text('Document confidentiel — usage médical', MARGIN, footerY, {
         width: CONTENT_WIDTH,
         align: 'right',
       });
@@ -192,8 +203,13 @@ function drawFooters(doc: PDFKit.PDFDocument, documentTitle: string): void {
     doc
       .fillColor(MUTED)
       .fontSize(6.5)
-      .text(documentTitle, MARGIN, y + 10, { width: CONTENT_WIDTH, align: 'center' });
+      .text(documentTitle, MARGIN, footerY + 10, { width: CONTENT_WIDTH, align: 'center' });
+
+    page.margins.bottom = bottomMargin;
+    doc.y = MARGIN;
   }
+
+  doc.y = savedY;
 }
 
 /** Ajoute une page (avec en-tête) si `needed` dépasse l'espace restant. */
@@ -224,20 +240,41 @@ function field(doc: PDFKit.PDFDocument, label: string, value: string, pageTitle:
   ensureSpace(doc, 15, pageTitle);
   const y = doc.y;
   doc.fillColor(MUTED).font('Helvetica').fontSize(8.5).text(label, MARGIN, y, { width: 140 });
-  doc.fillColor(INK).font('Helvetica').fontSize(9).text(value || '—', MARGIN + 145, y, {
+
+  // Une valeur longue ne doit jamais se chevaucher avec la ligne suivante :
+  // on la tronque sur une seule ligne plutôt que de laisser PDFKit la couper.
+  doc.fillColor(INK).font('Helvetica').fontSize(9);
+  doc.text(truncate(doc, value || '—', CONTENT_WIDTH - 145), MARGIN + 145, y, {
     width: CONTENT_WIDTH - 145,
+    lineBreak: false,
   });
   doc.y = y + 14;
 }
 
+/**
+ * Écrit un bloc de texte en évitant qu'un saut de page automatique ne coupe le
+ * paragraphe sur une page sans en-tête : la hauteur réelle est calculée avant.
+ */
+function textBlock(
+  doc: PDFKit.PDFDocument,
+  text: string,
+  pageTitle: string,
+  options: { fontSize?: number; color?: string; italic?: boolean } = {},
+): void {
+  const value = text || '—';
+  const fontSize = options.fontSize ?? 9.5;
+  const font = options.italic ? 'Helvetica-Oblique' : 'Helvetica';
+
+  doc.fillColor(options.color ?? INK).font(font).fontSize(fontSize);
+  const height = doc.heightOfString(value, { width: CONTENT_WIDTH });
+  ensureSpace(doc, height + 10, pageTitle);
+  doc.text(value, MARGIN, doc.y, { width: CONTENT_WIDTH, align: 'justify' });
+  doc.moveDown(0.6);
+}
+
 /** Paragraphe de texte libre. */
 function paragraph(doc: PDFKit.PDFDocument, text: string, pageTitle: string): void {
-  ensureSpace(doc, 40, pageTitle);
-  doc.fillColor(INK).font('Helvetica').fontSize(9.5).text(text || '—', MARGIN, doc.y, {
-    width: CONTENT_WIDTH,
-    align: 'justify',
-  });
-  doc.moveDown(0.6);
+  textBlock(doc, text, pageTitle);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -427,11 +464,9 @@ export function generatePatientRecordPdf(data: PatientRecordData): Promise<Buffe
         .font('Helvetica-Bold')
         .fontSize(9.5)
         .text(`${formatDateTime(consultation.created_at)} — ${consultation.doctor_name ?? 'Médecin'}`);
-      doc.fillColor(INK).font('Helvetica').fontSize(9).text(`Diagnostic : ${consultation.diagnosis}`, {
-        width: CONTENT_WIDTH,
-      });
+      textBlock(doc, `Diagnostic : ${consultation.diagnosis}`, title, { fontSize: 9 });
       if (consultation.notes) {
-        doc.fillColor(MUTED).fontSize(8.5).text(consultation.notes, { width: CONTENT_WIDTH });
+        textBlock(doc, consultation.notes, title, { fontSize: 8.5, color: MUTED });
       }
       if (consultation.follow_up_at) {
         doc.fillColor(BRAND).fontSize(8.5).text(`Suivi prévu le ${formatDate(consultation.follow_up_at)}`);
@@ -487,11 +522,11 @@ export function generatePatientRecordPdf(data: PatientRecordData): Promise<Buffe
   );
 
   doc.moveDown(1);
-  doc
-    .fillColor(MUTED)
-    .font('Helvetica-Oblique')
-    .fontSize(8)
-    .text(`Document généré par ${data.generatedBy}.`, MARGIN, doc.y, { width: CONTENT_WIDTH });
+  textBlock(doc, `Document généré par ${data.generatedBy}.`, title, {
+    fontSize: 8,
+    color: MUTED,
+    italic: true,
+  });
 
   drawFooters(doc, title);
   return toBuffer(doc);
@@ -767,17 +802,13 @@ export function generateInvoicePdf(data: InvoiceDocumentData): Promise<Buffer> {
   }
 
   doc.moveDown(0.6);
-  doc
-    .fillColor(MUTED)
-    .font('Helvetica')
-    .fontSize(7.5)
-    .text(
-      `TVA acquittée sur les encaissements. Règlement à effectuer avant le ${formatDate(invoice.due_date)}. ` +
-        'Passé ce délai, des pénalités de retard peuvent être appliquées.',
-      MARGIN,
-      doc.y,
-      { width: CONTENT_WIDTH },
-    );
+  textBlock(
+    doc,
+    `TVA acquittée sur les encaissements. Règlement à effectuer avant le ${formatDate(invoice.due_date)}. ` +
+      'Passé ce délai, des pénalités de retard peuvent être appliquées.',
+    title,
+    { fontSize: 7.5, color: MUTED },
+  );
 
   drawFooters(doc, title);
   return toBuffer(doc);
@@ -834,7 +865,7 @@ export function generateDispensationSlipPdf(data: DispensationDocumentData): Pro
       item.dosage,
       item.duration,
       String(item.quantity),
-      '☐',
+      '[ ]',
     ]),
     title,
   );
@@ -861,16 +892,12 @@ export function generateDispensationSlipPdf(data: DispensationDocumentData): Pro
   field(doc, 'Observations', '____________________________', title);
 
   doc.moveDown(1.2);
-  doc
-    .fillColor(MUTED)
-    .font('Helvetica-Oblique')
-    .fontSize(7.5)
-    .text(
-      'Les médicaments délivrés sont tracés dans le stock de la pharmacie. Conserver ce bon jusqu’à la fin du traitement.',
-      MARGIN,
-      doc.y,
-      { width: CONTENT_WIDTH },
-    );
+  textBlock(
+    doc,
+    'Les médicaments délivrés sont tracés dans le stock de la pharmacie. Conserver ce bon jusqu’à la fin du traitement.',
+    title,
+    { fontSize: 7.5, color: MUTED, italic: true },
+  );
 
   drawFooters(doc, title);
   return toBuffer(doc);
@@ -951,16 +978,12 @@ export function generateShiftPlanningPdf(data: ShiftPlanningData): Promise<Buffe
   }
 
   doc.moveDown(0.8);
-  doc
-    .fillColor(MUTED)
-    .font('Helvetica-Oblique')
-    .fontSize(7.5)
-    .text(
-      'Planning susceptible d’ajustements. Toute modification doit être validée par le chef de département concerné.',
-      MARGIN,
-      doc.y,
-      { width: CONTENT_WIDTH },
-    );
+  textBlock(
+    doc,
+    'Planning susceptible d’ajustements. Toute modification doit être validée par le chef de département concerné.',
+    title,
+    { fontSize: 7.5, color: MUTED, italic: true },
+  );
 
   drawFooters(doc, title);
   return toBuffer(doc);
