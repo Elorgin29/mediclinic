@@ -13,30 +13,28 @@ import {
   type RoleCode,
 } from './constants';
 
-const DATE_FR = new Intl.DateTimeFormat('fr-FR', {
-  day: '2-digit',
-  month: '2-digit',
-  year: 'numeric',
-});
+import { INTL_LOCALES, getSharedLocale, labelsFor } from './i18n';
 
-const DATE_LONG_FR = new Intl.DateTimeFormat('fr-FR', {
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric',
-});
+/** Formateurs mis en cache par locale (reconstruits lors d'un changement de langue). */
+const formatterCache = new Map<string, Intl.DateTimeFormat>();
 
-const DATETIME_FR = new Intl.DateTimeFormat('fr-FR', {
-  day: '2-digit',
-  month: '2-digit',
-  year: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit',
-});
+function cachedFormatter(key: string, options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+  const locale = INTL_LOCALES[getSharedLocale()];
+  const cacheKey = `${locale}:${key}`;
+  let formatter = formatterCache.get(cacheKey);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(locale, options);
+    formatterCache.set(cacheKey, formatter);
+  }
+  return formatter;
+}
 
-const TIME_FR = new Intl.DateTimeFormat('fr-FR', {
-  hour: '2-digit',
-  minute: '2-digit',
-});
+const dateOptions: Intl.DateTimeFormatOptions = { day: '2-digit', month: '2-digit', year: 'numeric' };
+const dateLongOptions: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long', year: 'numeric' };
+const dateTimeOptions: Intl.DateTimeFormatOptions = {
+  day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
+};
+const timeOptions: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit' };
 
 function toDate(value: string | Date | null | undefined): Date | null {
   if (!value) return null;
@@ -46,22 +44,22 @@ function toDate(value: string | Date | null | undefined): Date | null {
 
 export function formatDate(value?: string | Date | null): string {
   const d = toDate(value);
-  return d ? DATE_FR.format(d) : '—';
+  return d ? cachedFormatter('date', dateOptions).format(d) : '—';
 }
 
 export function formatDateLong(value?: string | Date | null): string {
   const d = toDate(value);
-  return d ? DATE_LONG_FR.format(d) : '—';
+  return d ? cachedFormatter('dateLong', dateLongOptions).format(d) : '—';
 }
 
 export function formatDateTime(value?: string | Date | null): string {
   const d = toDate(value);
-  return d ? DATETIME_FR.format(d) : '—';
+  return d ? cachedFormatter('dateTime', dateTimeOptions).format(d) : '—';
 }
 
 export function formatTime(value?: string | Date | null): string {
   const d = toDate(value);
-  return d ? TIME_FR.format(d) : '—';
+  return d ? cachedFormatter('time', timeOptions).format(d) : '—';
 }
 
 export function formatMoney(value: number | string | null | undefined, currency = 'EUR'): string {
@@ -72,7 +70,7 @@ export function formatMoney(value: number | string | null | undefined, currency 
   const n = typeof value === 'string' ? Number.parseFloat(value) : value;
   if (!Number.isFinite(n)) return '—';
 
-  return new Intl.NumberFormat('fr-FR', {
+  return new Intl.NumberFormat(INTL_LOCALES[getSharedLocale()], {
     style: 'currency',
     currency,
     minimumFractionDigits: 2,
@@ -91,7 +89,7 @@ export function formatAge(birthDate?: string | null): string {
   let age = now.getFullYear() - d.getFullYear();
   const m = now.getMonth() - d.getMonth();
   if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age -= 1;
-  return `${age} ans`;
+  return `${age} ${labelsFor().age}`;
 }
 
 /** Convertit une Date en valeur acceptée par un <input type="datetime-local">. */
@@ -124,7 +122,7 @@ export const labels = {
 };
 
 export function roleLabel(code: string): string {
-  return ROLE_LABELS_FR[code as RoleCode] ?? code;
+  return labelsFor().roles[code] ?? ROLE_LABELS_FR[code as RoleCode] ?? code;
 }
 
 export function initials(firstName: string, lastName: string): string {

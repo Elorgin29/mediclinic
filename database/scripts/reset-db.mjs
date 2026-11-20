@@ -10,7 +10,8 @@
  *   1. `001_init.sql`   — création de la base, des tables et des triggers ;
  *   2. `002_views.sql`  — création des vues ;
  *   3. `003_seed.sql`   — jeu de données de démonstration (optionnel) ;
- *   4. `004_news.sql`   — module Actualités + rôle Rédacteur (idempotent).
+ *   4. `004_news.sql`   — module Actualités + rôle Rédacteur (idempotent) ;
+ *   5. `005_i18n.sql`   — dictionnaire de traductions FR/EN/MG (idempotent).
  *
  * UTILISATION
  *   node database/scripts/reset-db.mjs            # structure + vues seulement
@@ -220,8 +221,9 @@ async function main() {
       await runSqlFile(connection, '003_seed.sql');
     }
 
-    // 004 est idempotent : il met aussi à niveau une base déjà existante.
+    // 004 et 005 sont idempotents : ils mettent aussi à niveau une base déjà existante.
     await runSqlFile(connection, '004_news.sql');
+    await runSqlFile(connection, '005_i18n.sql');
 
     // 4. Vérification.
     const [tables] = await connection.query(

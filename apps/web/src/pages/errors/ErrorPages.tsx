@@ -7,10 +7,12 @@ import { Link } from 'react-router-dom';
 
 import { Button, Card } from '@/components/ui';
 import { useAuth } from '@/contexts/AuthContext';
+import { useI18n } from '@/i18n/I18nContext';
 
 /** Page affichée lorsqu'un utilisateur n'a pas les droits requis. */
 export function ForbiddenPage(): JSX.Element {
   const { user, isPatient } = useAuth();
+  const { t } = useI18n();
   const homeLink = user ? (isPatient ? '/patient' : '/admin') : '/';
 
   return (
@@ -19,17 +21,14 @@ export function ForbiddenPage(): JSX.Element {
         <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400">
           <Lock className="h-7 w-7" aria-hidden />
         </span>
-        <h1 className="mt-4 text-xl font-bold text-slate-900 dark:text-white">Accès refusé</h1>
-        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-          Votre compte ne dispose pas des permissions nécessaires pour consulter cette page. Si vous pensez
-          qu’il s’agit d’une erreur, contactez un administrateur pour vérifier vos rôles.
-        </p>
+        <h1 className="mt-4 text-xl font-bold text-slate-900 dark:text-white">{t('error.forbiddenTitle')}</h1>
+        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{t('error.forbiddenMessage')}</p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <Link to={homeLink}>
-            <Button leftIcon={<Home className="h-4 w-4" />}>Retour à mon espace</Button>
+            <Button leftIcon={<Home className="h-4 w-4" />}>{t('error.backSpace')}</Button>
           </Link>
           <Link to="/">
-            <Button variant="secondary">Site public</Button>
+            <Button variant="secondary">{t('nav.home')}</Button>
           </Link>
         </div>
       </Card>
@@ -40,6 +39,7 @@ export function ForbiddenPage(): JSX.Element {
 /** Page 404. */
 export function NotFoundPage(): JSX.Element {
   const { user, isPatient } = useAuth();
+  const { t } = useI18n();
   const homeLink = user ? (isPatient ? '/patient' : '/admin') : '/';
 
   return (
@@ -49,13 +49,11 @@ export function NotFoundPage(): JSX.Element {
           <SearchX className="h-7 w-7" aria-hidden />
         </span>
         <p className="mt-4 text-4xl font-bold text-slate-900 dark:text-white">404</p>
-        <h1 className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">Page introuvable</h1>
-        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-          L’adresse demandée n’existe pas ou a été déplacée.
-        </p>
+        <h1 className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">{t('error.notFoundTitle')}</h1>
+        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{t('error.notFoundMessage')}</p>
         <div className="mt-6 flex justify-center">
           <Link to={homeLink}>
-            <Button leftIcon={<Home className="h-4 w-4" />}>Retour à l’accueil</Button>
+            <Button leftIcon={<Home className="h-4 w-4" />}>{t('error.backHome')}</Button>
           </Link>
         </div>
       </Card>

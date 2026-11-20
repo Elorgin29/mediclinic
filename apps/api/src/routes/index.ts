@@ -25,6 +25,7 @@ import { consultationsRouter } from '../modules/consultations/consultations.rout
 import { dashboardRouter } from '../modules/dashboard/dashboard.routes.js';
 import { departmentsRouter } from '../modules/departments/departments.routes.js';
 import { doctorsRouter } from '../modules/doctors/doctors.routes.js';
+import { i18nRouter } from '../modules/i18n/i18n.routes.js';
 import { invoicesRouter } from '../modules/invoices/invoices.routes.js';
 import { labRouter } from '../modules/lab/lab.routes.js';
 import { medicationsRouter } from '../modules/medications/medications.routes.js';
@@ -82,6 +83,7 @@ apiRouter.use('/specialties', specialtiesRouter);
 apiRouter.use('/departments', departmentsRouter);
 apiRouter.use('/doctors', doctorsRouter);
 apiRouter.use('/news', newsRouter);
+apiRouter.use('/i18n', i18nRouter);
 
 /* -------------------------------------------------------------------------- */
 /* Parcours de soin                                                            */

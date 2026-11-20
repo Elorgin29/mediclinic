@@ -9,21 +9,25 @@
 import type { NewsArticle } from '@mediclinic/shared';
 import { useQuery } from '@tanstack/react-query';
 
+import { useI18n } from '@/i18n/I18nContext';
 import { apiGet } from '@/lib/apiClient';
 import { queryKeys } from '@/lib/queryClient';
+
+type Translator = (key: string, fallback?: string) => string;
 
 import { ARTICLES, type Article } from './articles';
 
 /** Convertit un article API dans le format attendu par les pages publiques. */
-export function toPublicArticle(article: NewsArticle): Article {
+export function toPublicArticle(article: NewsArticle, t?: Translator): Article {
+  const translate: Translator = t ?? ((_key, fallback) => fallback ?? _key);
   return {
     slug: article.slug,
-    title: article.title,
+    title: translate(`news.${article.slug}.title`, article.title),
     category: article.category,
     date: (article.published_at ?? article.created_at).slice(0, 10),
     readTime: article.read_time,
     author: article.author,
-    excerpt: article.excerpt,
+    excerpt: translate(`news.${article.slug}.excerpt`, article.excerpt),
     content: article.content,
     keyPoints: article.key_points,
   };
@@ -31,6 +35,7 @@ export function toPublicArticle(article: NewsArticle): Article {
 
 /** Articles publiés, avec repli sur le contenu statique. */
 export function usePublicArticles(limit = 50) {
+  const { t } = useI18n();
   const query = useQuery({
     queryKey: [...queryKeys.news.public, limit] as const,
     queryFn: () => apiGet<NewsArticle[]>(`/news/public?limit=${limit}`),
@@ -38,13 +43,14 @@ export function usePublicArticles(limit = 50) {
   });
 
   const articles: Article[] =
-    query.data && query.data.length > 0 ? query.data.map(toPublicArticle) : ARTICLES;
+    query.data && query.data.length > 0 ? query.data.map((item) => toPublicArticle(item, t)) : ARTICLES;
 
   return { articles, isLoading: query.isLoading };
 }
 
 /** Un article publié par son slug, avec repli sur le contenu statique. */
 export function usePublicArticle(slug: string | undefined) {
+  const { t } = useI18n();
   const query = useQuery({
     queryKey: queryKeys.news.detail(slug ?? ''),
     queryFn: () => apiGet<NewsArticle>(`/news/public/${slug}`),
@@ -53,7 +59,7 @@ export function usePublicArticle(slug: string | undefined) {
   });
 
   const article: Article | undefined = query.data
-    ? toPublicArticle(query.data)
+    ? toPublicArticle(query.data, t)
     : ARTICLES.find((item) => item.slug === slug);
 
   return { article, isLoading: query.isLoading };

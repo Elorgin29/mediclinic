@@ -24,8 +24,10 @@ import {
 import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { Button } from '@/components/ui';
 import { useAuth } from '@/contexts/AuthContext';
+import { useI18n } from '@/i18n/I18nContext';
 import { CLINIC_CONTACT } from '@/lib/clinic';
 import { PUBLIC_FOOTER_NAV, PUBLIC_NAV } from '@/routes/navigation';
 import { cn } from '@/lib/utils';
@@ -34,6 +36,7 @@ import { useTheme } from '@/hooks';
 export function PublicLayout(): JSX.Element {
   const { user, isStaff } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { t } = useI18n();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
 
@@ -103,7 +106,7 @@ export function PublicLayout(): JSX.Element {
               >
                 {({ isActive }) => (
                   <>
-                    {item.label}
+                    {t(item.labelKey, item.label)}
                     <span
                       className={cn(
                         'absolute inset-x-3 -bottom-0.5 h-0.5 rounded-full bg-brand-600 transition-opacity dark:bg-brand-400',
@@ -118,24 +121,25 @@ export function PublicLayout(): JSX.Element {
           </nav>
 
           <div className="flex items-center gap-1.5">
+            <LanguageSwitcher compact />
             <Button
               variant="ghost"
               size="icon"
               onClick={toggleTheme}
-              aria-label={theme === 'dark' ? 'Passer en thème clair' : 'Passer en thème sombre'}
+              aria-label={t(theme === 'dark' ? 'common.theme.light' : 'common.theme.dark')}
             >
               {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
 
             <Link to={portalLink} className="hidden md:block">
               <Button size="sm" variant="ghost">
-                {user ? 'Mon espace' : 'Se connecter'}
+                {t(user ? 'nav.mySpace' : 'nav.login')}
               </Button>
             </Link>
 
             <Link to="/rendez-vous" className="hidden sm:block">
               <Button size="sm" rightIcon={<ArrowRight className="h-3.5 w-3.5" />}>
-                Prendre rendez-vous
+                {t('nav.book')}
               </Button>
             </Link>
 
@@ -172,7 +176,7 @@ export function PublicLayout(): JSX.Element {
                       )
                     }
                   >
-                    {item.label}
+                    {t(item.labelKey, item.label)}
                     <ArrowRight className="h-4 w-4 opacity-40" aria-hidden />
                   </NavLink>
                 </li>
@@ -216,8 +220,7 @@ export function PublicLayout(): JSX.Element {
               <span className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">{APP_NAME}</span>
             </Link>
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-              Une clinique pluridisciplinaire à taille humaine, avec un parcours de soin entièrement
-              numérique : rendez-vous, téléconsultation, dossier médical et facturation.
+              {t('footer.description')}
             </p>
 
             <div className="mt-5 space-y-2 text-sm text-slate-600 dark:text-slate-300">
@@ -237,18 +240,18 @@ export function PublicLayout(): JSX.Element {
 
             <div className="mt-5 inline-flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
               <ShieldCheck className="h-4 w-4" aria-hidden />
-              Données de santé hébergées en France
+              {t('footer.hosting')}
             </div>
           </div>
 
           {PUBLIC_FOOTER_NAV.map((column) => (
             <div key={column.title}>
-              <p className="text-sm font-semibold text-slate-900 dark:text-white">{column.title}</p>
+              <p className="text-sm font-semibold text-slate-900 dark:text-white">{t(column.labelKey, column.title)}</p>
               <ul className="mt-4 space-y-2.5 text-sm text-slate-500 dark:text-slate-400">
                 {column.items.map((item) => (
-                  <li key={`${column.title}-${item.to}-${item.label}`}>
+                  <li key={`${column.title}-${item.to}-${t(item.labelKey, item.label)}`}>
                     <Link to={item.to} className="transition-colors hover:text-brand-700 dark:hover:text-brand-400">
-                      {item.label}
+                      {t(item.labelKey, item.label)}
                     </Link>
                   </li>
                 ))}
@@ -264,13 +267,13 @@ export function PublicLayout(): JSX.Element {
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4">
               <Link to="/mentions-legales" className="hover:text-brand-700 dark:hover:text-brand-400">
-                Mentions légales
+                {t('footer.legal')}
               </Link>
               <Link to="/mentions-legales#confidentialite" className="hover:text-brand-700 dark:hover:text-brand-400">
-                Confidentialité
+                {t('footer.privacy')}
               </Link>
               <Link to="/faq" className="hover:text-brand-700 dark:hover:text-brand-400">
-                Aide
+                {t('nav.faq')}
               </Link>
             </div>
           </div>

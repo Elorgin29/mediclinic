@@ -29,6 +29,7 @@ import { Link } from 'react-router-dom';
 
 import { Badge, Button, Card, EmptyState, ErrorState, Skeleton } from '@/components/ui';
 import { PageHero, SectionHeading } from '@/components/public/PageHero';
+import { useI18n } from '@/i18n/I18nContext';
 import { apiGet, getApiErrorMessage } from '@/lib/apiClient';
 import { queryKeys } from '@/lib/queryClient';
 
@@ -78,6 +79,7 @@ function specialtyIcon(name: string) {
 }
 
 export default function ServicesPage(): JSX.Element {
+  const { t } = useI18n();
   const specialtiesQuery = useQuery({
     queryKey: queryKeys.specialties.all,
     queryFn: () => apiGet<Specialty[]>('/specialties/public'),
@@ -202,10 +204,10 @@ export default function ServicesPage(): JSX.Element {
                           )}
                         </div>
                         <h3 className="mt-3 text-sm font-semibold text-slate-900 group-hover:text-brand-800 dark:text-white">
-                          {specialty.name}
+                          {t(`specialty.${specialty.id}.name`, specialty.name)}
                         </h3>
                         <p className="mt-1.5 line-clamp-3 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                          {specialty.description ?? 'Prise en charge spécialisée par un praticien de la clinique.'}
+                          {t(`specialty.${specialty.id}.description`, specialty.description ?? 'Prise en charge spécialisée par un praticien de la clinique.')}
                         </p>
                         <p className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-brand-700 dark:text-brand-400">
                           Découvrir les praticiens

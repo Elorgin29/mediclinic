@@ -67,6 +67,16 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (token) {
     config.headers.set('Authorization', `Bearer ${token}`);
   }
+  // La langue est lue directement dans le stockage pour éviter une dépendance
+  // circulaire avec le provider React.
+  try {
+    const stored = localStorage.getItem('mediclinic.locale');
+    if (stored === 'fr' || stored === 'en' || stored === 'mg') {
+      config.headers.set('Accept-Language', stored);
+    }
+  } catch {
+    // Stockage indisponible : l'API reste en français par défaut.
+  }
   return config;
 });
 

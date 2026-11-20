@@ -21,6 +21,7 @@ import { toast } from 'sonner';
 import { Badge, Button, Card, CardBody, CardHeader, Input, Modal, Select, Textarea } from '@/components/ui';
 import { PageHeader } from '@/components/layouts/PageHeader';
 import { Can } from '@/components/Can';
+import { useI18n } from '@/i18n/I18nContext';
 import { apiDelete, apiGet, apiGetRaw, apiPatch, apiPost, getApiErrorMessage } from '@/lib/apiClient';
 import { queryKeys } from '@/lib/queryClient';
 
@@ -35,6 +36,7 @@ interface DepartmentWithHead extends Department {
 }
 
 export default function SpecialtiesAdminPage(): JSX.Element {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
 
   const [specialtyModal, setSpecialtyModal] = useState<{ open: boolean; target: SpecialtyWithCount | null }>({
@@ -147,9 +149,9 @@ export default function SpecialtiesAdminPage(): JSX.Element {
                     <div className="flex min-w-0 items-start gap-2">
                       <Tags className="mt-0.5 h-4 w-4 shrink-0 text-brand-700 dark:text-brand-400" aria-hidden />
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-slate-900 dark:text-white">{specialty.name}</p>
+                        <p className="text-sm font-medium text-slate-900 dark:text-white">{t(`specialty.${specialty.id}.name`, specialty.name)}</p>
                         <p className="line-clamp-2 text-xs text-slate-500 dark:text-slate-400">
-                          {specialty.description ?? '—'}
+                          {t(`specialty.${specialty.id}.description`, specialty.description ?? '-')}
                         </p>
                         {specialty.doctors_count !== undefined && (
                           <Badge tone="neutral" className="mt-1">

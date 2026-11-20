@@ -8,10 +8,12 @@ import { ArrowRight, Stethoscope } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import { Card, EmptyState, ErrorState, Skeleton } from '@/components/ui';
+import { useI18n } from '@/i18n/I18nContext';
 import { apiGet, getApiErrorMessage } from '@/lib/apiClient';
 import { queryKeys } from '@/lib/queryClient';
 
 export default function SpecialtiesPage(): JSX.Element {
+  const { t } = useI18n();
   const query = useQuery({
     queryKey: queryKeys.specialties.all,
     queryFn: () => apiGet<Specialty[]>('/specialties/public'),
@@ -20,10 +22,8 @@ export default function SpecialtiesPage(): JSX.Element {
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <header className="max-w-2xl">
-        <h1 className="page-title">Spécialités médicales</h1>
-        <p className="page-subtitle">
-          Dix spécialités couvertes par la clinique, du suivi de grossesse à la chirurgie orthopédique.
-        </p>
+        <h1 className="page-title">{t('public.specialties.title')}</h1>
+        <p className="page-subtitle">{t('public.specialties.subtitle')}</p>
       </header>
 
       <div className="mt-8">
@@ -41,7 +41,7 @@ export default function SpecialtiesPage(): JSX.Element {
           <ErrorState message={getApiErrorMessage(query.error)} onRetry={() => void query.refetch()} />
         ) : (query.data ?? []).length === 0 ? (
           <Card>
-            <EmptyState icon={Stethoscope} title="Aucune spécialité enregistrée" />
+            <EmptyState icon={Stethoscope} title={t('public.specialties.empty')} />
           </Card>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -55,10 +55,10 @@ export default function SpecialtiesPage(): JSX.Element {
                     <ArrowRight className="h-4 w-4 text-slate-300 transition-transform group-hover:translate-x-0.5 group-hover:text-brand-600" />
                   </div>
                   <h2 className="mt-3 text-sm font-semibold text-slate-900 group-hover:text-brand-800 dark:text-white">
-                    {specialty.name}
+                    {t(`specialty.${specialty.id}.name`, specialty.name)}
                   </h2>
                   <p className="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                    {specialty.description ?? 'Prise en charge spécialisée.'}
+                    {t(`specialty.${specialty.id}.description`, specialty.description ?? t('public.specialties.fallback'))}
                   </p>
                 </Card>
               </Link>

@@ -31,6 +31,7 @@ import { Badge, Button, Card } from '@/components/ui';
 import { HeroStat, SectionHeading } from '@/components/public/PageHero';
 import { CLINIC_CONTACT, CLINIC_HIGHLIGHTS, CLINIC_HOURS } from '@/lib/clinic';
 import { usePublicArticles } from '@/lib/news';
+import { useI18n } from '@/i18n/I18nContext';
 import { apiGet } from '@/lib/apiClient';
 import { queryKeys } from '@/lib/queryClient';
 
@@ -104,6 +105,7 @@ const FAQ_TEASER = [
 ];
 
 export default function HomePage(): JSX.Element {
+  const { t } = useI18n();
   const doctorsQuery = useQuery({
     queryKey: queryKeys.doctors.public({ limit: 4 }),
     queryFn: () => apiGet<DoctorPublic[]>('/doctors/public?limit=4'),
@@ -318,10 +320,10 @@ export default function HomePage(): JSX.Element {
                 </span>
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-slate-900 group-hover:text-brand-800 dark:text-white">
-                    {specialty.name}
+                    {t(`specialty.${specialty.id}.name`, specialty.name)}
                   </p>
                   <p className="mt-0.5 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">
-                    {specialty.description}
+                    {t(`specialty.${specialty.id}.description`, specialty.description ?? undefined)}
                   </p>
                 </div>
                 <ArrowRight

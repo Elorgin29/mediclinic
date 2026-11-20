@@ -8,8 +8,8 @@
  */
 
 import {
-  PERMISSION_ACTION_LABELS_FR,
-  PERMISSION_RESOURCE_LABELS_FR,
+  labelsFor,
+  localizedRoleLabel,
   type Permission,
   type PermissionAction,
   type PermissionResource,
@@ -36,6 +36,7 @@ import {
 } from '@/components/ui';
 import { PageHeader } from '@/components/layouts/PageHeader';
 import { Can } from '@/components/Can';
+import { useI18n } from '@/i18n/I18nContext';
 import { apiDelete, apiGet, apiPatch, apiPost, apiPut, getApiErrorMessage } from '@/lib/apiClient';
 import { queryKeys } from '@/lib/queryClient';
 import { cn } from '@/lib/utils';
@@ -61,6 +62,8 @@ const ACTIONS: PermissionAction[] = ['create', 'read', 'update', 'delete', 'mana
 
 export default function RolesPage(): JSX.Element {
   const queryClient = useQueryClient();
+  const { t } = useI18n();
+  const permissionLabels = labelsFor();
   const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null);
   /** Identifiants de permissions cochés pour le rôle courant. */
   const [draft, setDraft] = useState<Set<number>>(new Set());
@@ -286,7 +289,7 @@ export default function RolesPage(): JSX.Element {
                       {role.is_system && (
                         <Lock className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-label="Rôle système" />
                       )}
-                      <span className="truncate font-medium">{role.name}</span>
+                      <span className="truncate font-medium">{localizedRoleLabel(role.code)}</span>
                     </span>
                     <span className="shrink-0 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                       {count}
@@ -351,7 +354,7 @@ export default function RolesPage(): JSX.Element {
                       <th className="sticky left-0 bg-slate-50 dark:bg-slate-900">Ressource</th>
                       {ACTIONS.map((action) => (
                         <th key={action} className="text-center">
-                          {PERMISSION_ACTION_LABELS_FR[action]}
+                          {permissionLabels.permissionAction[action]}
                         </th>
                       ))}
                       <th className="text-center">Tout</th>
@@ -360,7 +363,7 @@ export default function RolesPage(): JSX.Element {
                   <tbody>
                     {grouped.map(([resource, byAction]) => {
                       const resourceLabel =
-                        PERMISSION_RESOURCE_LABELS_FR[resource] ?? String(resource);
+                        permissionLabels.permissionResource[resource] ?? String(resource);
                       const ids = [...byAction.values()].map((permission) => permission.id);
                       const allChecked = ids.length > 0 && ids.every((id) => draft.has(id));
 
@@ -387,8 +390,8 @@ export default function RolesPage(): JSX.Element {
                                   type="checkbox"
                                   checked={isChecked}
                                   onChange={() => toggle(permission.id)}
-                                  aria-label={`${resourceLabel} — ${PERMISSION_ACTION_LABELS_FR[action]}`}
-                                  title={permission.code}
+                                  aria-label={`${resourceLabel} — ${permissionLabels.permissionAction[action]}`}
+                                  title={t(`permission.${permission.code}.description`, permission.description ?? permission.code)}
                                   className="h-4 w-4 rounded border-slate-300 text-brand-700 focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-800"
                                 />
                               </td>

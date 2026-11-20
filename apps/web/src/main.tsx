@@ -14,6 +14,7 @@ import { Toaster } from 'sonner';
 
 import { AppRoutes } from '@/routes/AppRoutes';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { I18nProvider } from '@/i18n/I18nContext';
 import { queryClient } from '@/lib/queryClient';
 import { themeStorage } from '@/lib/utils';
 
@@ -31,15 +32,17 @@ ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <AuthProvider>
-          <AppRoutes />
-          <Toaster
-            position="top-right"
-            richColors
-            closeButton
-            toastOptions={{ duration: 4500 }}
-          />
-        </AuthProvider>
+        <I18nProvider>
+          <AuthProvider>
+            <AppRoutes />
+            <Toaster
+              position="top-right"
+              richColors
+              closeButton
+              toastOptions={{ duration: 4500 }}
+            />
+          </AuthProvider>
+        </I18nProvider>
       </BrowserRouter>
     </QueryClientProvider>
   </React.StrictMode>,

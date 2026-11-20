@@ -16,7 +16,7 @@
  * permet de vérifier côté serveur que l'utilisateur a le droit de se connecter.
  */
 
-import { MEETING_JOIN_WINDOW_MINUTES, type MeetingSignature } from '@mediclinic/shared';
+import { INTL_LOCALES, MEETING_JOIN_WINDOW_MINUTES, getSharedLocale, type MeetingSignature } from '@mediclinic/shared';
 import { AlertTriangle, Loader2, LogOut, Mic, MicOff, PhoneOff, ScreenShare, Video, VideoOff } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -116,7 +116,7 @@ export function MeetingRoom({ meetingId, role, title, onClose }: MeetingRoomProp
 
       await client.init({
         zoomAppRoot: containerRef.current ?? undefined,
-        language: 'fr-FR',
+        language: INTL_LOCALES[getSharedLocale()],
         customize: {
           video: { isResizable: true, viewSizes: { default: { width: '100%', height: 420 } } },
         },

@@ -11,8 +11,10 @@ import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { Button, CountBadge } from '@/components/ui';
 import { useAuth } from '@/contexts/AuthContext';
+import { useI18n } from '@/i18n/I18nContext';
 import { apiGet } from '@/lib/apiClient';
 import { queryKeys } from '@/lib/queryClient';
 import { cn, initialsFrom } from '@/lib/utils';
@@ -22,6 +24,7 @@ import { PATIENT_NAV } from '@/routes/navigation';
 export function PatientLayout(): JSX.Element {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { t } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -48,22 +51,23 @@ export function PatientLayout(): JSX.Element {
               MC
             </span>
             <span className="hidden text-base font-bold text-slate-900 sm:block dark:text-white">
-              {APP_NAME} — Mon espace
+              {APP_NAME} — {t('layout.patient.space')}
             </span>
           </Link>
 
           <div className="flex items-center gap-1.5">
+            <LanguageSwitcher compact />
             <Button
               variant="ghost"
               size="icon"
               onClick={toggleTheme}
-              aria-label={theme === 'dark' ? 'Passer en thème clair' : 'Passer en thème sombre'}
+              aria-label={t(theme === 'dark' ? 'common.theme.light' : 'common.theme.dark')}
             >
               {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
 
             <Link to="/patient/notifications" className="relative">
-              <Button variant="ghost" size="icon" aria-label="Mes notifications">
+              <Button variant="ghost" size="icon" aria-label={t('common.notifications')}>
                 <Bell className="h-4 w-4" />
               </Button>
               {(unreadQuery.data?.count ?? 0) > 0 && (
@@ -87,7 +91,7 @@ export function PatientLayout(): JSX.Element {
               </span>
             </button>
 
-            <Button variant="ghost" size="icon" onClick={() => void handleLogout()} aria-label="Se déconnecter">
+            <Button variant="ghost" size="icon" onClick={() => void handleLogout()} aria-label={t('common.logout')}>
               <LogOut className="h-4 w-4" />
             </Button>
           </div>
@@ -139,7 +143,7 @@ export function PatientLayout(): JSX.Element {
                 }
               >
                 <item.icon className="h-4 w-4" aria-hidden />
-                {item.label}
+                {t(item.labelKey, item.label)}
               </NavLink>
             ))}
           </div>
@@ -151,8 +155,7 @@ export function PatientLayout(): JSX.Element {
       </main>
 
       <footer className="border-t border-slate-200 bg-white px-4 py-5 text-center text-xs text-slate-400 dark:border-slate-800 dark:bg-slate-900">
-        {APP_NAME} — vos données médicales sont confidentielles et accessibles uniquement aux professionnels
-        autorisés. En cas d’urgence vitale, appelez le 15.
+        {APP_NAME} — {t('layout.patient.footer')}
       </footer>
     </div>
   );

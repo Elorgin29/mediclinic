@@ -41,6 +41,7 @@ import {
 } from 'recharts';
 
 import { Button, Card, CardBody, CardHeader, CardsSkeleton, EmptyState, ErrorState, StatCard } from '@/components/ui';
+import { useI18n } from '@/i18n/I18nContext';
 import { apiGet, getApiErrorMessage } from '@/lib/apiClient';
 import { formatNumber } from '@/lib/utils';
 import { queryKeys } from '@/lib/queryClient';
@@ -81,6 +82,7 @@ function ChartTooltip({ active, payload, label }: {
 }
 
 export default function DashboardPage(): JSX.Element {
+  const { t } = useI18n();
   const query = useQuery({
     queryKey: queryKeys.dashboard.stats,
     queryFn: () => apiGet<DashboardPayload>('/dashboard/stats'),
@@ -90,8 +92,8 @@ export default function DashboardPage(): JSX.Element {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="page-title">Tableau de bord</h1>
-          <p className="page-subtitle">Chargement des indicateurs…</p>
+          <h1 className="page-title">{t('nav.dashboard')}</h1>
+          <p className="page-subtitle">{t('admin.dashboard.loading')}</p>
         </div>
         <CardsSkeleton count={6} />
         <div className="card h-80 p-5">
@@ -105,7 +107,7 @@ export default function DashboardPage(): JSX.Element {
   if (query.isError || !query.data) {
     return (
       <div className="space-y-6">
-        <h1 className="page-title">Tableau de bord</h1>
+        <h1 className="page-title">{t('nav.dashboard')}</h1>
         <Card>
           <ErrorState message={getApiErrorMessage(query.error)} onRetry={() => void query.refetch()} />
         </Card>
@@ -119,9 +121,9 @@ export default function DashboardPage(): JSX.Element {
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="page-title">Tableau de bord</h1>
+          <h1 className="page-title">{t('nav.dashboard')}</h1>
           <p className="page-subtitle">
-            Vue d’ensemble de l’activité de la clinique — {formatNumber(stats.patientsTotal)} patients suivis.
+            {t('admin.dashboard.patientsFollowed')} {formatNumber(stats.patientsTotal)}
           </p>
         </div>
         <div className="flex gap-2">
