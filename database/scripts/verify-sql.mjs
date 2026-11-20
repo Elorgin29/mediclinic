@@ -59,6 +59,7 @@ const EXPECTED_TABLES = [
   'audit_logs',
   'notifications',
   'clinic_settings',
+  'news',
 ];
 
 const EXPECTED_VIEWS = [
@@ -307,11 +308,11 @@ function verifySeed() {
 
   console.log('— 003_seed.sql');
 
-  // Cohérence du nombre de permissions : le seed doit déclarer les 77 lignes.
+  // Cohérence du nombre de permissions : le seed doit déclarer les 81 lignes.
   const permissionInserts = [...sql.matchAll(/^\((\d+),\s*'([a-z]+:[a-z]+)'/gm)];
   check(
-    'permissions du seed ≥ 77',
-    permissionInserts.length >= 77,
+    'permissions du seed ≥ 81',
+    permissionInserts.length >= 81,
     `${permissionInserts.length} déclarées`,
   );
 
@@ -332,10 +333,11 @@ function verifySeed() {
     'PHARMACIST',
     'RECEPTIONIST',
     'ACCOUNTANT',
+    'NEWS_EDITOR',
     'PATIENT',
   ];
   const missingRoles = expectedRoles.filter((role) => !sql.includes(`'${role}'`));
-  check('8 rôles déclarés', missingRoles.length === 0, missingRoles.join(', ') || 'tous présents');
+  check('9 rôles déclarés', missingRoles.length === 0, missingRoles.join(', ') || 'tous présents');
 
   // Volumétrie annoncée en tête de fichier.
   check('30 patients insérés', /BETWEEN 24 AND 53/.test(sql));

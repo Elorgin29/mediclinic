@@ -14,6 +14,7 @@ export const ROLES = [
   'PHARMACIST',
   'RECEPTIONIST',
   'ACCOUNTANT',
+  'NEWS_EDITOR',
   'PATIENT',
 ] as const;
 export type RoleCode = (typeof ROLES)[number];
@@ -27,6 +28,7 @@ export const STAFF_ROLES: RoleCode[] = [
   'PHARMACIST',
   'RECEPTIONIST',
   'ACCOUNTANT',
+  'NEWS_EDITOR',
 ];
 
 export const ROLE_LABELS_FR: Record<RoleCode, string> = {
@@ -37,6 +39,7 @@ export const ROLE_LABELS_FR: Record<RoleCode, string> = {
   PHARMACIST: 'Pharmacien(ne)',
   RECEPTIONIST: 'Réceptionniste',
   ACCOUNTANT: 'Comptable',
+  NEWS_EDITOR: 'Rédacteur actualités',
   PATIENT: 'Patient',
 };
 
@@ -198,6 +201,7 @@ export const PERMISSION_RESOURCES = [
   'report',
   'notification',
   'settings',
+  'news',
 ] as const;
 export type PermissionResource = (typeof PERMISSION_RESOURCES)[number];
 
@@ -223,6 +227,7 @@ export const PERMISSION_RESOURCE_LABELS_FR: Record<PermissionResource, string> =
   report: 'Rapports',
   notification: 'Notifications',
   settings: 'Paramètres',
+  news: 'Actualités',
 };
 
 export const PAGINATION_DEFAULT_LIMIT = 20;

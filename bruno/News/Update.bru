@@ -1,0 +1,53 @@
+meta {
+  name: Update
+  type: http
+  seq: 6
+}
+
+patch {
+  url: {{baseUrl}}/api/news/{{newsId}}
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "title": "Article mis à jour",
+    "status": "PUBLISHED"
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  const body = res.getBody();
+  const isJson = body && typeof body === "object" && !Array.isArray(body) && !Buffer.isBuffer(body);
+
+  test("statut 2xx", () => expect(res.status).to.be.within(200, 299));
+  if (res.status !== 204 && isJson) {
+    test("enveloppe data", () => expect(body).to.have.property("data"));
+  }
+}
+
+docs {
+  ### Update
+
+  `PATCH {{baseUrl}}/api/news/{{newsId}}`
+
+  Mise à jour partielle : titre, catégorie, résumé, contenu, points clés, auteur, temps de lecture, illustration, statut et date de publication.
+  Changer le titre régénère le slug. Passer en `DRAFT` efface `publishedAt`.
+
+  **Authentification** : `news:update`
+
+  **Réponse attendue** : 200 — `{ data: NewsArticle }`
+}

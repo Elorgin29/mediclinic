@@ -46,9 +46,10 @@ export const RESOURCE_ACTIONS: Record<PermissionResource, readonly PermissionAct
   report: ['read'],
   notification: ['read', 'update', 'delete'],
   settings: ['read', 'update'],
+  news: ['create', 'read', 'update', 'delete'],
 };
 
-/** Liste exhaustive des 77 permissions de l'application. */
+/** Liste exhaustive des 81 permissions de l'application. */
 export const PERMISSION_CODES: readonly PermissionCode[] = PERMISSION_RESOURCES.flatMap((resource) =>
   RESOURCE_ACTIONS[resource].map((action) => `${resource}:${action}` as PermissionCode),
 );
@@ -123,9 +124,15 @@ export const ROLE_PERMISSIONS: Record<RoleCode, readonly PermissionCode[]> = {
     'notification:read', 'notification:update',
   ],
 
+  /** Rôle dédié à la publication des contenus du site public. */
+  NEWS_EDITOR: [
+    'news:create', 'news:read', 'news:update', 'news:delete',
+    'notification:read', 'notification:update',
+  ],
+
   PATIENT: [
     'patient:read', 'patient:update',
-    'appointment:create', 'appointment:read',
+    'appointment:create', 'appointment:read', 'appointment:update',
     'consultation:read', 'prescription:read',
     'invoice:read', 'payment:read', 'lab:read',
     'meeting:create', 'meeting:read',

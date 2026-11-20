@@ -30,7 +30,7 @@ import { Link } from 'react-router-dom';
 import { Badge, Button, Card } from '@/components/ui';
 import { HeroStat, SectionHeading } from '@/components/public/PageHero';
 import { CLINIC_CONTACT, CLINIC_HIGHLIGHTS, CLINIC_HOURS } from '@/lib/clinic';
-import { ARTICLES } from '@/lib/articles';
+import { usePublicArticles } from '@/lib/news';
 import { apiGet } from '@/lib/apiClient';
 import { queryKeys } from '@/lib/queryClient';
 
@@ -114,7 +114,8 @@ export default function HomePage(): JSX.Element {
     queryFn: () => apiGet<Specialty[]>('/specialties/public'),
   });
 
-  const featuredArticles = ARTICLES.slice(0, 3);
+  const { articles } = usePublicArticles(3);
+  const featuredArticles = articles.slice(0, 3);
 
   return (
     <div>

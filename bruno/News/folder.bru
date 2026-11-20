@@ -1,0 +1,22 @@
+meta {
+  name: News
+}
+
+docs {
+  ## Dossier News
+
+  Gestion des actualités du site public : articles publiés (routes publiques) et administration complète (brouillons inclus) protégée par les permissions `news:*`.
+  Le rôle `NEWS_EDITOR` (redaction@mediclinic.fr) dispose uniquement de ces permissions.
+
+  ### Requêtes
+
+  - `GET {{baseUrl}}/api/news/public?limit=5` — Public List
+  - `GET {{baseUrl}}/api/news/public/{{newsSlug}}` — Public Get
+  - `GET {{baseUrl}}/api/news` — List
+  - `GET {{baseUrl}}/api/news/{{newsId}}` — Get
+  - `POST {{baseUrl}}/api/news` — Create
+  - `PATCH {{baseUrl}}/api/news/{{newsId}}` — Update
+  - `DELETE {{baseUrl}}/api/news/{{newsId}}` — Delete
+
+  Les requêtes d'administration utilisent l'environnement **Local** et l'en-tête `Authorization: Bearer {{accessToken}}` ; les deux requêtes `Public` sont anonymes.
+}

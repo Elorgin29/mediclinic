@@ -1,0 +1,45 @@
+meta {
+  name: Delete
+  type: http
+  seq: 7
+}
+
+delete {
+  url: {{baseUrl}}/api/news/{{newsId}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+assert {
+  res.status: eq 204
+}
+
+tests {
+  const body = res.getBody();
+  const isJson = body && typeof body === "object" && !Array.isArray(body) && !Buffer.isBuffer(body);
+
+  test("statut 2xx", () => expect(res.status).to.be.within(200, 299));
+  if (res.status !== 204 && isJson) {
+    test("enveloppe data", () => expect(body).to.have.property("data"));
+  }
+}
+
+docs {
+  ### Delete
+
+  `DELETE {{baseUrl}}/api/news/{{newsId}}`
+
+  Suppression définitive de l'article et retrait immédiat du site public.
+
+  **Authentification** : `news:delete`
+
+  **Réponse attendue** : 204 sans corps.
+}

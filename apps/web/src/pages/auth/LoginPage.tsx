@@ -44,8 +44,11 @@ export default function LoginPage(): JSX.Element {
       toast.success(`Bienvenue ${user.first_name} !`);
 
       const state = location.state as LocationState | null;
+      const isNewsOnly =
+        user.roles.includes('NEWS_EDITOR') &&
+        !user.roles.some((role) => role !== 'NEWS_EDITOR' && role !== 'PATIENT');
       const isStaff = user.roles.some((role) => role !== 'PATIENT');
-      const fallback = isStaff ? '/admin' : '/patient';
+      const fallback = isNewsOnly ? '/admin/actualites' : isStaff ? '/admin' : '/patient';
       navigate(state?.from ?? fallback, { replace: true });
     } catch (error) {
       toast.error(getApiErrorMessage(error));
@@ -135,6 +138,9 @@ export default function LoginPage(): JSX.Element {
             </li>
             <li>
               <span className="font-medium">Comptable :</span> hugo.charpentier@mediclinic.fr
+            </li>
+            <li>
+              <span className="font-medium">Rédacteur actualités :</span> redaction@mediclinic.fr
             </li>
             <li>
               <span className="font-medium">Patient :</span> lucie.durand@email.fr

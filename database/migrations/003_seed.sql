@@ -13,9 +13,9 @@
 --  (hachage bcrypt 12 rounds ci-dessous — identique pour tous les comptes)
 --
 --  VOLUMÉTRIE (conforme au cahier des charges) :
---    53 utilisateurs  : 3 admins, 8 médecins, 5 infirmiers, 2 pharmaciens,
---                       3 réceptionnistes, 2 comptables, 30 patients
---    8 rôles / 77 permissions / matrice role_permissions complète
+--    54 utilisateurs  : 3 admins, 8 médecins, 5 infirmiers, 2 pharmaciens,
+--                       3 réceptionnistes, 2 comptables, 1 rédacteur, 30 patients
+--    9 rôles / 81 permissions / matrice role_permissions complète
 --    10 spécialités, 8 départements, 8 médecins, 30 patients
 --    20 médicaments + 40 mouvements de stock
 --    50 rendez-vous répartis sur 3 mois
@@ -90,7 +90,8 @@ INSERT INTO `roles` (`id`, `code`, `name`, `description`, `is_system`) VALUES
 (5, 'PHARMACIST',   'Pharmacien(ne)',       'Catalogue, stock et dispensation des ordonnances',          TRUE),
 (6, 'RECEPTIONIST', 'Réceptionniste',       'Accueil, rendez-vous, facturation au guichet',              TRUE),
 (7, 'ACCOUNTANT',   'Comptable',            'Facturation, encaissements et rapports financiers',         TRUE),
-(8, 'PATIENT',      'Patient',              'Espace patient : rendez-vous, dossier, ordonnances',        TRUE);
+(8, 'PATIENT',      'Patient',              'Espace patient : rendez-vous, dossier, ordonnances',        TRUE),
+(9, 'NEWS_EDITOR',  'Rédacteur actualités', 'Rédaction et publication des actualités du site public',   TRUE);
 
 -- =============================================================================
 -- 2. RBAC — permissions atomiques « ressource:action » (77)
@@ -193,7 +194,12 @@ INSERT INTO `permissions` (`id`, `code`, `resource`, `action`, `description`) VA
 (75, 'notification:delete', 'notification', 'delete', 'Supprimer une notification'),
 -- Paramètres
 (76, 'settings:read',       'settings',     'read',   'Consulter les paramètres de la clinique'),
-(77, 'settings:update',     'settings',     'update', 'Modifier les paramètres de la clinique');
+(77, 'settings:update',     'settings',     'update', 'Modifier les paramètres de la clinique'),
+-- Actualités du site public
+(78, 'news:create',         'news',         'create', 'Rédiger une actualité'),
+(79, 'news:read',           'news',         'read',   'Consulter les actualités'),
+(80, 'news:update',         'news',         'update', 'Modifier une actualité'),
+(81, 'news:delete',         'news',         'delete', 'Supprimer une actualité');
 
 -- =============================================================================
 -- 3. RBAC — matrice rôle / permission
@@ -257,10 +263,13 @@ JOIN `permissions` p ON
       'invoice:read', 'payment:read', 'lab:read',
       'meeting:create', 'meeting:read',
       'dashboard:read',
+      'notification:read', 'notification:update'))
+  OR (r.`code` = 'NEWS_EDITOR' AND p.`code` IN (
+      'news:create', 'news:read', 'news:update', 'news:delete',
       'notification:read', 'notification:update'));
 
 -- =============================================================================
--- 4. UTILISATEURS (53)
+-- 4. UTILISATEURS (54)
 -- =============================================================================
 INSERT INTO `users` (`id`, `email`, `password_hash`, `first_name`, `last_name`, `phone`, `is_active`) VALUES
 -- Administrateurs (1-3)
@@ -322,7 +331,9 @@ INSERT INTO `users` (`id`, `email`, `password_hash`, `first_name`, `last_name`, 
 (50, 'farida.bensalem@email.fr',  @password_hash, 'Farida',  'Bensalem',   '0341000027', TRUE),
 (51, 'arthur.lucas@email.fr',     @password_hash, 'Arthur',  'Lucas',      '0341000028', TRUE),
 (52, 'marie.fontaine@email.fr',   @password_hash, 'Marie',   'Fontaine',   '0341000029', TRUE),
-(53, 'yasmine.hamdi@email.fr',    @password_hash, 'Yasmine', 'Hamdi',      '0341000030', TRUE);
+(53, 'yasmine.hamdi@email.fr',    @password_hash, 'Yasmine', 'Hamdi',      '0341000030', TRUE),
+-- Rédactrice des actualités (54)
+(54, 'redaction@mediclinic.fr',   @password_hash, 'Camille', 'Moreau',     '0340000061', TRUE);
 
 -- Affectation des rôles (un rôle par utilisateur, sauf le super admin qui en
 -- porte deux : la relation users ↔ roles est bien de type N-N).
@@ -336,6 +347,7 @@ SELECT u.`id`,
          WHEN u.`id` IN (17, 18)             THEN 5
          WHEN u.`id` BETWEEN 19 AND 21       THEN 6
          WHEN u.`id` IN (22, 23)             THEN 7
+         WHEN u.`id` = 54                    THEN 9
          ELSE 8
        END
 FROM `users` u;
@@ -804,6 +816,55 @@ INSERT INTO `clinic_settings` (`id`, `name`, `address`, `phone`, `email`, `curre
     'EUR', 20.00, NULL);
 
 -- =============================================================================
+-- 18 bis. ACTUALITÉS DU SITE PUBLIC (6 articles publiés)
+-- =============================================================================
+INSERT INTO `news`
+  (`slug`, `title`, `category`, `excerpt`, `content`, `key_points`, `author`, `read_time`, `status`, `published_at`, `created_by`)
+VALUES
+('preparer-sa-consultation', 'Comment bien préparer sa consultation médicale', 'Conseils',
+ 'Une consultation efficace se prépare. Liste des symptômes, traitements en cours, questions à poser : nos conseils pour profiter pleinement du temps avec votre médecin.',
+ JSON_ARRAY('Le temps d’une consultation est limité. Notez depuis quand les symptômes sont apparus, leur évolution et ce qui les aggrave ou les soulage.',
+            'Apportez la liste de vos traitements en cours, y compris médicaments sans ordonnance et compléments alimentaires.',
+            'Notez vos questions à l’avance : un simple mémo sur votre téléphone suffit.'),
+ JSON_ARRAY('Notez la chronologie et l’intensité des symptômes.', 'Listez tous vos traitements.', 'Préparez deux ou trois questions prioritaires.', 'Apportez vos examens récents.'),
+ 'Dr Claire Martin', 4, 'PUBLISHED', '2026-11-12 09:00:00', 54),
+('teleconsultation-mode-emploi', 'Téléconsultation : mode d’emploi et bonnes pratiques', 'Numérique',
+ 'La visioconférence médicale est pratique, mais elle nécessite un minimum de préparation. Voici comment rendre votre téléconsultation aussi utile qu’une consultation en présentiel.',
+ JSON_ARRAY('La téléconsultation convient au suivi des maladies chroniques, au renouvellement d’ordonnances et à l’interprétation de résultats.',
+            'Installez-vous dans un endroit calme et vérifiez votre connexion quelques minutes avant l’heure.',
+            'Décrivez précisément vos symptômes et vérifiez la posologie à la fin de l’échange.'),
+ JSON_ARRAY('Testez votre matériel avant le rendez-vous.', 'Préparez vos documents et vos constantes.', 'Choisissez un lieu calme et lumineux.', 'Demandez un compte-rendu écrit.'),
+ 'Équipe MediClinic', 5, 'PUBLISHED', '2026-10-28 09:00:00', 54),
+('prevention-cardiovasculaire', 'Prévention cardiovasculaire : les gestes qui comptent', 'Prévention',
+ 'Activité physique, alimentation, sommeil, tension artérielle : les leviers concrets pour prendre soin de votre cœur au quotidien, à tout âge.',
+ JSON_ARRAY('Une part importante des facteurs de risque cardiovasculaire est modifiable : tabac, sédentarité, surpoids, hypertension, diabète et cholestérol.',
+            'Trente minutes d’activité physique modérée cinq fois par semaine réduisent significativement le risque.',
+            'Privilégiez légumes, fruits et céréales complètes en limitant produits ultra-transformés, sel et alcool.'),
+ JSON_ARRAY('Bouger au moins 30 minutes par jour.', 'Faire contrôler sa tension une fois par an.', 'Réduire sel, alcool et tabac.', 'Consulter en cas de douleur thoracique.'),
+ 'Dr Antoine Lefèvre', 6, 'PUBLISHED', '2026-10-09 09:00:00', 54),
+('sommeil-et-sante', 'Sommeil et santé : reconstruire des nuits réparatrices', 'Bien-être',
+ 'Le manque de sommeil affecte l’humeur, l’immunité et le risque cardiométabolique. Quelques routines simples permettent souvent d’améliorer la qualité des nuits.',
+ JSON_ARRAY('Un adulte a besoin de sept à neuf heures de sommeil ; la régularité des horaires est souvent plus importante que la durée.',
+            'Évitez les écrans lumineux dans l’heure qui précède le coucher et la caféine après 14h.',
+            'Si les difficultés durent plus de trois semaines, parlez-en à votre médecin.'),
+ JSON_ARRAY('Se coucher et se lever à heures régulières.', 'Limiter les écrans le soir.', 'Éviter la caféine en fin de journée.', 'Consulter si les troubles persistent.'),
+ 'Dr Sophie Bernard', 5, 'PUBLISHED', '2026-09-22 09:00:00', 54),
+('vaccination-adulte', 'Vaccination de l’adulte : êtes-vous à jour ?', 'Prévention',
+ 'Diphtérie, tétanos, coqueluche, grippe, zona… Les rappels vaccinaux concernent aussi les adultes. Faites le point avec votre médecin traitant.',
+ JSON_ARRAY('Les recommandations vaccinales évoluent avec l’âge, la grossesse, les maladies chroniques ou les voyages.',
+            'Le rappel diphtérie-tétanos-coqueluche est recommandé tous les vingt ans à l’âge adulte.',
+            'La clinique propose des séances de vaccination sans rendez-vous certains après-midis.'),
+ JSON_ARRAY('Vérifier son carnet de vaccination.', 'Rappel DTP tous les 20 ans.', 'Vaccination grippe chaque automne.', 'Signaler grossesse et maladies chroniques.'),
+ 'Dr Claire Martin', 4, 'PUBLISHED', '2026-09-03 09:00:00', 54),
+('dossier-medical-numerique', 'Votre dossier médical numérique, mode d’emploi', 'Numérique',
+ 'Ordonnances, résultats d’analyses et comptes-rendus centralisés : découvrez comment utiliser votre espace patient et protéger vos identifiants.',
+ JSON_ARRAY('Votre espace patient regroupe ordonnances, résultats de laboratoire, comptes-rendus et factures.',
+            'L’accès est protégé par une authentification : ne partagez jamais votre mot de passe.',
+            'Vous pouvez télécharger vos documents au format PDF pour les transmettre à un autre professionnel.'),
+ JSON_ARRAY('Un seul espace pour tous vos documents.', 'Connexion sécurisée et journalisée.', 'Téléchargement PDF disponible.', 'Ne jamais partager ses identifiants.'),
+ 'Équipe MediClinic', 3, 'PUBLISHED', '2026-08-19 09:00:00', 54);
+
+-- =============================================================================
 -- 19. NETTOYAGE
 -- =============================================================================
 DROP TEMPORARY TABLE IF EXISTS `seed_seq`;
@@ -835,7 +896,8 @@ UNION ALL SELECT 'lab_tests',            COUNT(*) FROM `lab_tests`
 UNION ALL SELECT 'lab_requests',         COUNT(*) FROM `lab_requests`
 UNION ALL SELECT 'notifications',        COUNT(*) FROM `notifications`
 UNION ALL SELECT 'audit_logs',           COUNT(*) FROM `audit_logs`
-UNION ALL SELECT 'clinic_settings',      COUNT(*) FROM `clinic_settings`;
+UNION ALL SELECT 'clinic_settings',      COUNT(*) FROM `clinic_settings`
+UNION ALL SELECT 'news',                 COUNT(*) FROM `news`;
 
 -- Contrôle de cohérence : le stock calculé par les triggers ne doit jamais
 -- devenir négatif et les totaux de facture doivent correspondre aux lignes.

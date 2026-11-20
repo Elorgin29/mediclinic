@@ -21,8 +21,8 @@ import {
 } from '@mediclinic/shared';
 
 describe('Matrice des permissions', () => {
-  it('déclare 77 permissions', () => {
-    expect(PERMISSION_CODES).toHaveLength(77);
+  it('déclare 81 permissions', () => {
+    expect(PERMISSION_CODES).toHaveLength(81);
   });
 
   it('ne contient aucun doublon', () => {

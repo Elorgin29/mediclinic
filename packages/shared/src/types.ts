@@ -111,6 +111,30 @@ export interface Specialty {
   created_at: string;
 }
 
+/** Statut de publication d'un article du site public. */
+export type NewsStatus = 'DRAFT' | 'PUBLISHED';
+
+/** Article / actualité du site public, géré depuis le back-office. */
+export interface NewsArticle {
+  id: number;
+  slug: string;
+  title: string;
+  category: string;
+  excerpt: string;
+  /** Paragraphes de l'article. */
+  content: string[];
+  /** Points clés affichés dans l'encadré « À retenir ». */
+  key_points: string[];
+  author: string;
+  read_time: number;
+  image_url: string | null;
+  status: NewsStatus;
+  published_at: string | null;
+  created_by: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Department {
   id: number;
   name: string;

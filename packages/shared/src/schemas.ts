@@ -550,6 +550,35 @@ export const clinicSettingsSchema = z.object({
 export type ClinicSettingsInput = z.infer<typeof clinicSettingsSchema>;
 
 /* -------------------------------------------------------------------------- */
+/* Actualités du site public                                                   */
+/* -------------------------------------------------------------------------- */
+
+/** Un paragraphe / point clé ne peut pas être vide. */
+const paragraphSchema = z.string().trim().min(1).max(4000);
+
+export const newsStatusSchema = z.enum(['DRAFT', 'PUBLISHED']);
+
+export const createNewsSchema = z.object({
+  title: z.string().trim().min(3, 'Titre requis').max(180),
+  category: z.string().trim().min(2, 'Catégorie requise').max(60),
+  excerpt: z.string().trim().min(10, 'Résumé trop court').max(500),
+  content: z.array(paragraphSchema).min(1, 'Ajoutez au moins un paragraphe').max(100),
+  keyPoints: z.array(paragraphSchema).max(20).default([]),
+  author: z.string().trim().min(2).max(100).default('Équipe MediClinic'),
+  readTime: z.coerce.number().int().min(1).max(60).optional(),
+  imageUrl: z.string().trim().url('URL invalide').max(500).nullable().optional(),
+  status: newsStatusSchema.default('DRAFT'),
+  publishedAt: dateTimeSchema.nullable().optional(),
+});
+
+export const updateNewsSchema = createNewsSchema.partial();
+
+export const newsQuerySchema = listQuerySchema.extend({
+  status: newsStatusSchema.optional(),
+  category: z.string().trim().max(60).optional(),
+});
+
+/* -------------------------------------------------------------------------- */
 /* Exports de commodité                                                        */
 /* -------------------------------------------------------------------------- */
 

@@ -9,7 +9,8 @@
  * Il exécute, dans l'ordre :
  *   1. `001_init.sql`   — création de la base, des tables et des triggers ;
  *   2. `002_views.sql`  — création des vues ;
- *   3. `003_seed.sql`   — jeu de données de démonstration (optionnel).
+ *   3. `003_seed.sql`   — jeu de données de démonstration (optionnel) ;
+ *   4. `004_news.sql`   — module Actualités + rôle Rédacteur (idempotent).
  *
  * UTILISATION
  *   node database/scripts/reset-db.mjs            # structure + vues seulement
@@ -219,6 +220,9 @@ async function main() {
       await runSqlFile(connection, '003_seed.sql');
     }
 
+    // 004 est idempotent : il met aussi à niveau une base déjà existante.
+    await runSqlFile(connection, '004_news.sql');
+
     // 4. Vérification.
     const [tables] = await connection.query(
       `SELECT COUNT(*) AS total FROM information_schema.tables
@@ -246,6 +250,7 @@ async function main() {
       console.log('  paul.mercier@mediclinic.fr (PHARMACIST)');
       console.log('  emma.gautier@mediclinic.fr (RECEPTIONIST)');
       console.log('  hugo.charpentier@mediclinic.fr (ACCOUNTANT)');
+      console.log('  redaction@mediclinic.fr    (NEWS_EDITOR)');
       console.log('  lucie.durand@email.fr      (PATIENT)');
     }
   } catch (error) {

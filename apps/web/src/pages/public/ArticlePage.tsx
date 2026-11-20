@@ -8,11 +8,20 @@ import { Link, useParams } from 'react-router-dom';
 
 import { Badge, Button, Card } from '@/components/ui';
 import { PageHero } from '@/components/public/PageHero';
-import { ARTICLES, findArticle } from '@/lib/articles';
+import { usePublicArticle, usePublicArticles } from '@/lib/news';
 
 export default function ArticlePage(): JSX.Element {
   const { slug } = useParams<{ slug: string }>();
-  const article = findArticle(slug);
+  const { article, isLoading } = usePublicArticle(slug);
+  const { articles } = usePublicArticles();
+
+  if (isLoading) {
+    return (
+      <div className="public-container py-20 text-center text-sm text-slate-500 dark:text-slate-400">
+        Chargement de l’article…
+      </div>
+    );
+  }
 
   if (!article) {
     return (
@@ -32,7 +41,7 @@ export default function ArticlePage(): JSX.Element {
     );
   }
 
-  const related = ARTICLES.filter((item) => item.slug !== article.slug).slice(0, 3);
+  const related = articles.filter((item) => item.slug !== article.slug).slice(0, 3);
 
   return (
     <div>

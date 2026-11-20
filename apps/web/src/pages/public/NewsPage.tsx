@@ -7,11 +7,12 @@ import { Link } from 'react-router-dom';
 
 import { Badge, Button, Card } from '@/components/ui';
 import { PageHero } from '@/components/public/PageHero';
-import { ARTICLES } from '@/lib/articles';
+import { usePublicArticles } from '@/lib/news';
 import { formatDate } from '@mediclinic/shared';
 
 export default function NewsPage(): JSX.Element {
-  const [featured, ...rest] = ARTICLES;
+  const { articles } = usePublicArticles();
+  const [featured, ...rest] = articles;
 
   return (
     <div>

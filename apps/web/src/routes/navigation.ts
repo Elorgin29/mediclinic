@@ -19,6 +19,7 @@ import {
   FlaskConical,
   KeyRound,
   LayoutDashboard,
+  Newspaper,
   PackageSearch,
   Pill,
   Receipt,
@@ -84,6 +85,12 @@ export const ADMIN_NAV: NavGroup[] = [
     items: [
       { to: '/admin/factures', label: 'Factures', icon: Receipt, permission: 'invoice:read', badgeKey: 'overdueInvoices' },
       { to: '/admin/paiements', label: 'Paiements', icon: CreditCard, permission: 'payment:read' },
+    ],
+  },
+  {
+    title: 'Communication',
+    items: [
+      { to: '/admin/actualites', label: 'Actualités', icon: Newspaper, permission: 'news:read' },
     ],
   },
   {

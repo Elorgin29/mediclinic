@@ -122,4 +122,10 @@ export const queryKeys = {
   },
   specialties: { all: ['specialties'] as const, detail: (id: number) => ['specialties', id] as const },
   departments: { all: ['departments'] as const, detail: (id: number) => ['departments', id] as const },
+  news: {
+    all: ['news'] as const,
+    admin: (filters: unknown) => ['news', 'admin', filters] as const,
+    public: ['news', 'public'] as const,
+    detail: (slug: string) => ['news', 'public', slug] as const,
+  },
 };

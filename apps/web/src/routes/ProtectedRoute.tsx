@@ -60,7 +60,12 @@ export function RedirectIfAuthenticated({ children }: { children: ReactNode }): 
   const { user, isLoading, isPatient, isStaff } = useAuth();
 
   if (isLoading) return <FullPageLoader label="Chargement…" />;
-  if (user) return <Navigate to={isPatient && !isStaff ? '/patient' : '/admin'} replace />;
+  if (user) {
+    const isNewsOnly =
+      user.roles.includes('NEWS_EDITOR') &&
+      !user.roles.some((role) => role !== 'NEWS_EDITOR' && role !== 'PATIENT');
+    return <Navigate to={isNewsOnly ? '/admin/actualites' : isPatient && !isStaff ? '/patient' : '/admin'} replace />;
+  }
 
   return <>{children}</>;
 }

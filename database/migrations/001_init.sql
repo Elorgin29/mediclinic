@@ -242,6 +242,33 @@ CREATE TABLE `specialties` (
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 -- -----------------------------------------------------------------------------
+-- news : actualités du site public, rédigées depuis le back-office
+-- -----------------------------------------------------------------------------
+CREATE TABLE `news` (
+  `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `slug`         VARCHAR(200) NOT NULL,
+  `title`        VARCHAR(180) NOT NULL,
+  `category`     VARCHAR(60)  NOT NULL,
+  `excerpt`      VARCHAR(500) NOT NULL,
+  `content`      TEXT         NOT NULL,
+  `key_points`   TEXT         NULL,
+  `author`       VARCHAR(100) NOT NULL DEFAULT 'Équipe MediClinic',
+  `read_time`    TINYINT UNSIGNED NOT NULL DEFAULT 4,
+  `image_url`    VARCHAR(500) NULL,
+  `status`       ENUM('DRAFT', 'PUBLISHED') NOT NULL DEFAULT 'DRAFT',
+  `published_at` DATETIME     NULL,
+  `created_by`   INT UNSIGNED NULL,
+  `created_at`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_news_slug` (`slug`),
+  KEY `idx_news_status_published` (`status`, `published_at`),
+  CONSTRAINT `fk_news_created_by`
+    FOREIGN KEY (`created_by`) REFERENCES `users` (`id`)
+    ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------------------------------
 -- departments : départements de la clinique
 -- head_doctor_id pointe vers doctors ; la FK est ajoutée après doctors pour
 -- rompre le cycle de création. ON DELETE SET NULL conserve le département.

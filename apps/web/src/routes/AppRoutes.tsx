@@ -55,6 +55,7 @@ const PaymentsPage = lazy(() => import('@/pages/admin/PaymentsPage'));
 const ShiftsPage = lazy(() => import('@/pages/admin/ShiftsPage'));
 const MeetingsPage = lazy(() => import('@/pages/admin/MeetingsPage'));
 const LabPage = lazy(() => import('@/pages/admin/LabPage'));
+const NewsAdminPage = lazy(() => import('@/pages/admin/NewsAdminPage'));
 const DoctorsAdminPage = lazy(() => import('@/pages/admin/DoctorsAdminPage'));
 const SpecialtiesAdminPage = lazy(() => import('@/pages/admin/SpecialtiesAdminPage'));
 const DepartmentsAdminPage = lazy(() => import('@/pages/admin/DepartmentsAdminPage'));
@@ -138,9 +139,11 @@ export function AppRoutes(): JSX.Element {
         <Route
           index
           element={
-            <Lazy>
-              <DashboardPage />
-            </Lazy>
+            <ProtectedRoute permission="dashboard:read">
+              <Lazy>
+                <DashboardPage />
+              </Lazy>
+            </ProtectedRoute>
           }
         />
         <Route
@@ -244,6 +247,14 @@ export function AppRoutes(): JSX.Element {
           element={
             <Lazy>
               <LabPage />
+            </Lazy>
+          }
+        />
+        <Route
+          path="actualites"
+          element={
+            <Lazy>
+              <NewsAdminPage />
             </Lazy>
           }
         />

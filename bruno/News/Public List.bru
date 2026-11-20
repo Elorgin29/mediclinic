@@ -1,0 +1,38 @@
+meta {
+  name: Public List
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/news/public?limit=5
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  const body = res.getBody();
+  const isJson = body && typeof body === "object" && !Array.isArray(body) && !Buffer.isBuffer(body);
+
+  test("statut 2xx", () => expect(res.status).to.be.within(200, 299));
+  if (res.status !== 204 && isJson) {
+    test("enveloppe data", () => expect(body).to.have.property("data"));
+  }
+}
+
+docs {
+  ### Public List
+
+  `GET {{baseUrl}}/api/news/public?limit=5`
+
+  Articles publiés du site public, du plus récent au plus ancien. Aucune authentification requise,
+  les brouillons ne sont jamais renvoyés.
+
+  **Authentification** : publique
+
+  **Réponse attendue** : 200 — `{ data: NewsArticle[] }`
+}

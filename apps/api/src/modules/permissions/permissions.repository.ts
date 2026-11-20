@@ -1,7 +1,7 @@
 /**
  * Accès aux données des permissions.
  *
- * Les permissions sont un référentiel stable (77 lignes issues du seed) :
+ * Les permissions sont un référentiel stable (81 lignes issues du seed) :
  * ce module est essentiellement en lecture, complété par les écritures de la
  * matrice `role_permissions` utilisées par le module des rôles.
  */

@@ -29,6 +29,7 @@ import { invoicesRouter } from '../modules/invoices/invoices.routes.js';
 import { labRouter } from '../modules/lab/lab.routes.js';
 import { medicationsRouter } from '../modules/medications/medications.routes.js';
 import { meetingsRouter } from '../modules/meetings/meetings.routes.js';
+import { newsRouter } from '../modules/news/news.routes.js';
 import { notificationsRouter } from '../modules/notifications/notifications.routes.js';
 import { patientsRouter } from '../modules/patients/patients.routes.js';
 import { paymentsRouter } from '../modules/payments/payments.routes.js';
@@ -80,6 +81,7 @@ apiRouter.use('/permissions', permissionsRouter);
 apiRouter.use('/specialties', specialtiesRouter);
 apiRouter.use('/departments', departmentsRouter);
 apiRouter.use('/doctors', doctorsRouter);
+apiRouter.use('/news', newsRouter);
 
 /* -------------------------------------------------------------------------- */
 /* Parcours de soin                                                            */
