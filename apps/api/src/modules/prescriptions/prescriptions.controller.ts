@@ -81,6 +81,17 @@ function readId(req: Request, name = 'id'): number {
   return idSchema.parse(req.params[name]);
 }
 
+/** Garantit qu'un compte patient n'accède qu'à ses propres ordonnances. */
+function assertCanReadPatient(user: AuthUser, patientId: number): void {
+  const isPatientOnly = user.roles.includes('PATIENT') && !user.permissions.includes('patient:manage');
+  if (isPatientOnly && user.patientId !== patientId) {
+    throw AppError.forbidden(
+      'Vous ne pouvez accéder qu’à vos propres ordonnances.',
+      'NOT_YOUR_PRESCRIPTION',
+    );
+  }
+}
+
 /* -------------------------------------------------------------------------- */
 /* Lectures                                                                   */
 /* -------------------------------------------------------------------------- */
@@ -91,8 +102,14 @@ function readId(req: Request, name = 'id'): number {
  * comprises, avec filtres médecin / patient / statut / période / recherche.
  */
 export const list: RequestHandler = asyncHandler(async (req, res) => {
+  const user = requireUser(req);
   const query = prescriptionListQuerySchema.parse(req.query);
   const pagination = parsePagination(query);
+
+  // Un compte patient ne voit jamais les ordonnances d'un autre patient : on
+  // force le filtre à son dossier, même si un autre patientId est fourni.
+  const isPatientOnly = user.roles.includes('PATIENT') && !user.permissions.includes('patient:manage');
+  const patientId = isPatientOnly ? (user.patientId ?? undefined) : query.patientId;
 
   const result = await service.listPrescriptions(
     {
@@ -102,7 +119,7 @@ export const list: RequestHandler = asyncHandler(async (req, res) => {
       sort: query.sort,
       order: query.order,
       doctorId: query.doctorId,
-      patientId: query.patientId,
+      patientId,
       status: query.status,
       from: query.from,
       to: query.to,
@@ -119,7 +136,10 @@ export const list: RequestHandler = asyncHandler(async (req, res) => {
  * Express interpréterait « patient » comme un identifiant.
  */
 export const listByPatient: RequestHandler = asyncHandler(async (req, res) => {
+  const user = requireUser(req);
   const patientId = readId(req, 'patientId');
+  assertCanReadPatient(user, patientId);
+
   const query = listQuerySchema.parse(req.query);
   const pagination = parsePagination(query);
 
@@ -134,12 +154,37 @@ export const listByPatient: RequestHandler = asyncHandler(async (req, res) => {
 });
 
 /**
+ * GET /api/prescriptions/me
+ * Ordonnances du patient connecté (portail patient, sans permission staff).
+ */
+export const mine: RequestHandler = asyncHandler(async (req, res) => {
+  const user = requireUser(req);
+  if (user.patientId === null) {
+    throw AppError.forbidden('Cette ressource est réservée aux comptes patients.', 'NOT_A_PATIENT');
+  }
+  const query = listQuerySchema.parse(req.query);
+  const pagination = parsePagination(query);
+
+  const result = await service.listPrescriptionsByPatient(
+    user.patientId,
+    pagination,
+    query.sort,
+    query.order,
+  );
+
+  res.json(result);
+});
+
+/**
  * GET /api/prescriptions/:id
  * Ordonnance complète, avec ses lignes et le médicament dénommé.
  */
 export const detail: RequestHandler = asyncHandler(async (req, res) => {
+  const user = requireUser(req);
   const id = readId(req);
-  res.json({ data: await service.getPrescription(id) });
+  const prescription = await service.getPrescription(id);
+  assertCanReadPatient(user, prescription.patient_id);
+  res.json({ data: prescription });
 });
 
 /* -------------------------------------------------------------------------- */

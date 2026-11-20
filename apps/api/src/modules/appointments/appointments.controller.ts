@@ -53,6 +53,11 @@ function currentUser(req: Request): AuthUser {
  * Liste paginée des rendez-vous (vue `v_appointment_details`).
  */
 export const list: RequestHandler = asyncHandler(async (req, res) => {
+  const user = currentUser(req);
+  const isPatientOnly = user.roles.includes('PATIENT') && !user.permissions.includes('patient:manage');
+  if (isPatientOnly && user.patientId !== null) {
+    (req.query as Record<string, unknown>).patientId = String(user.patientId);
+  }
   const result = await appointmentsService.list(req.query as unknown as AppointmentListQuery);
   res.json(result);
 });
@@ -87,8 +92,14 @@ export const me: RequestHandler = asyncHandler(async (req, res) => {
  * Détail d'un rendez-vous et consultation éventuellement liée.
  */
 export const detail: RequestHandler = asyncHandler(async (req, res) => {
+  const user = currentUser(req);
   const id = parseIdParam(req);
-  res.json({ data: await appointmentsService.detail(id) });
+  const appointment = await appointmentsService.detail(id);
+  const isPatientOnly = user.roles.includes('PATIENT') && !user.permissions.includes('patient:manage');
+  if (isPatientOnly && user.patientId !== appointment.patient_id) {
+    throw AppError.forbidden('Vous ne pouvez accéder qu’à vos propres rendez-vous.', 'NOT_YOUR_APPOINTMENT');
+  }
+  res.json({ data: appointment });
 });
 
 /* -------------------------------------------------------------------------- */

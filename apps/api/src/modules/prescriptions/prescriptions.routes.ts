@@ -35,6 +35,11 @@ prescriptionsRouter.get(
 );
 
 /**
+ * Ordonnances du patient connecté (portail patient). Déclaré avant `/:id`.
+ */
+prescriptionsRouter.get('/me', authenticate, controller.mine);
+
+/**
  * Ordonnances d'un patient — déclaré avant `/:id` pour primer sur celui-ci.
  */
 prescriptionsRouter.get(

@@ -89,14 +89,18 @@ interface MeetingListQuery {
  * Liste paginée des téléconsultations (vue `v_active_meetings`).
  */
 export const list: RequestHandler = asyncHandler(async (req, res) => {
+  const user = requireUser(req);
   const query = req.query as unknown as MeetingListQuery;
   const pagination = parsePagination(req.query);
+
+  const isPatientOnly = user.roles.includes('PATIENT') && !user.permissions.includes('patient:manage');
+  const forcedPatientId = isPatientOnly ? (user.patientId ?? undefined) : undefined;
 
   const { data, total } = await service.list(
     {
       ...(query.status === undefined ? {} : { status: query.status }),
       ...(query.doctorId === undefined ? {} : { doctorId: query.doctorId }),
-      ...(query.patientId === undefined ? {} : { patientId: query.patientId }),
+      ...(forcedPatientId !== undefined ? { patientId: forcedPatientId } : query.patientId === undefined ? {} : { patientId: query.patientId }),
       ...(query.from === undefined ? {} : { from: query.from }),
       ...(query.to === undefined ? {} : { to: query.to }),
       ...(query.search === undefined ? {} : { search: query.search }),
@@ -126,8 +130,14 @@ export const mine: RequestHandler = asyncHandler(async (req, res) => {
  * Détail enrichi, avec la fenêtre de connexion recalculée côté serveur.
  */
 export const getById: RequestHandler = asyncHandler(async (req, res) => {
+  const user = requireUser(req);
   const id = parseIdParam(req);
   const meeting = await service.getById(id);
+
+  const isPatientOnly = user.roles.includes('PATIENT') && !user.permissions.includes('patient:manage');
+  if (isPatientOnly && user.patientId !== meeting.patient_id) {
+    throw AppError.forbidden('Vous ne pouvez accéder qu’à vos propres téléconsultations.', 'NOT_YOUR_MEETING');
+  }
 
   res.json({ data: meeting });
 });

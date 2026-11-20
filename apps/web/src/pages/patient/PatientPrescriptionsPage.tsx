@@ -45,7 +45,7 @@ export default function PatientPrescriptionsPage(): JSX.Element {
 
   const prescriptionsQuery = useQuery({
     queryKey: queryKeys.prescriptions.all({ patientId: user?.patient_id }),
-    queryFn: () => apiGetRaw<Paginated<PrescriptionWithItems>>('/prescriptions?limit=50'),
+    queryFn: () => apiGetRaw<Paginated<PrescriptionWithItems>>('/prescriptions/me?limit=50'),
   });
 
   const prescriptions = prescriptionsQuery.data?.data ?? [];

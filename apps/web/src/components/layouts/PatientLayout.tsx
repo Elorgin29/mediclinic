@@ -95,7 +95,35 @@ export function PatientLayout(): JSX.Element {
 
         {/* Navigation de l'espace patient */}
         <nav className="border-t border-slate-200 dark:border-slate-800" aria-label="Navigation de l'espace patient">
-          <div className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4 sm:px-6">
+          <style>{`
+            .patient-nav-scrollbar {
+              scrollbar-width: thin;
+              scrollbar-color: #94a3b8 transparent;
+            }
+            .patient-nav-scrollbar::-webkit-scrollbar {
+              height: 6px;
+            }
+            .patient-nav-scrollbar::-webkit-scrollbar-track {
+              background: transparent;
+            }
+            .patient-nav-scrollbar::-webkit-scrollbar-thumb {
+              border-radius: 9999px;
+              background: #94a3b8;
+            }
+            .patient-nav-scrollbar::-webkit-scrollbar-thumb:hover {
+              background: #64748b;
+            }
+            .dark .patient-nav-scrollbar {
+              scrollbar-color: #475569 transparent;
+            }
+            .dark .patient-nav-scrollbar::-webkit-scrollbar-thumb {
+              background: #475569;
+            }
+            .dark .patient-nav-scrollbar::-webkit-scrollbar-thumb:hover {
+              background: #64748b;
+            }
+          `}</style>
+          <div className="patient-nav-scrollbar mx-auto flex max-w-6xl gap-1 overflow-x-auto overflow-y-hidden px-4 sm:px-6">
             {PATIENT_NAV.map((item) => (
               <NavLink
                 key={item.to}

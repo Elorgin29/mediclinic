@@ -252,7 +252,7 @@ JOIN `permissions` p ON
       'notification:read', 'notification:update'))
   OR (r.`code` = 'PATIENT' AND p.`code` IN (
       'patient:read', 'patient:update',
-      'appointment:create', 'appointment:read',
+      'appointment:create', 'appointment:read', 'appointment:update',
       'consultation:read', 'prescription:read',
       'invoice:read', 'payment:read', 'lab:read',
       'meeting:create', 'meeting:read',

@@ -111,7 +111,7 @@ export default function HomePage(): JSX.Element {
 
   const specialtiesQuery = useQuery({
     queryKey: queryKeys.specialties.all,
-    queryFn: () => apiGet<Specialty[]>('/specialties'),
+    queryFn: () => apiGet<Specialty[]>('/specialties/public'),
   });
 
   const featuredArticles = ARTICLES.slice(0, 3);

@@ -51,7 +51,7 @@ export default function PatientAppointmentsPage(): JSX.Element {
     mutationFn: (appointmentId: number) =>
       apiPatch<Appointment>(`/appointments/${appointmentId}/status`, {
         status: 'CANCELLED',
-        cancelledReason: 'Annulé par le patient depuis son espace',
+        reason: 'Annulé par le patient depuis son espace',
       }),
     onSuccess: () => {
       toast.success('Rendez-vous annulé.');

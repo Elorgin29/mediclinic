@@ -9,6 +9,7 @@ import {
   formatMoney,
   INVOICE_STATUS_LABELS_FR,
   type Invoice,
+  type Paginated,
 } from '@mediclinic/shared';
 import { useQuery } from '@tanstack/react-query';
 import { Download, Receipt, Wallet } from 'lucide-react';
@@ -23,17 +24,17 @@ import {
   StatusBadge,
 } from '@/components/ui';
 import { PageHeader } from '@/components/layouts/PageHeader';
-import { apiGet, getApiErrorMessage } from '@/lib/apiClient';
+import { apiGetRaw, getApiErrorMessage } from '@/lib/apiClient';
 import { downloadPdf } from '@/lib/pdf';
 import { queryKeys } from '@/lib/queryClient';
 
 export default function PatientInvoicesPage(): JSX.Element {
   const invoicesQuery = useQuery({
     queryKey: queryKeys.invoices.me,
-    queryFn: () => apiGet<Invoice[]>('/invoices/me'),
+    queryFn: () => apiGetRaw<Paginated<Invoice>>('/invoices/me'),
   });
 
-  const invoices = invoicesQuery.data ?? [];
+  const invoices = invoicesQuery.data?.data ?? [];
   const totalBilled = invoices.reduce((sum, invoice) => sum + Number(invoice.total_amount), 0);
   const totalPaid = invoices.reduce((sum, invoice) => sum + Number(invoice.paid_amount), 0);
   const outstanding = totalBilled - totalPaid;

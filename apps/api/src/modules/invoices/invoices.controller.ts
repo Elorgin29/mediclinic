@@ -60,13 +60,17 @@ function readId(req: Request, name = 'id'): number {
  * échéance dépassée et recherche (numéro ou nom du patient).
  */
 export const list: RequestHandler = asyncHandler(async (req, res) => {
+  const user = requireUser(req);
   const query = invoiceQuerySchema.parse(req.query);
   const pagination = parsePagination(query);
+
+  const isPatientOnly = user.roles.includes('PATIENT') && !user.permissions.includes('patient:manage');
+  const patientId = isPatientOnly ? (user.patientId ?? undefined) : query.patientId;
 
   const { data, total } = await service.listInvoices(
     {
       status: query.status,
-      patientId: query.patientId,
+      patientId,
       from: query.from,
       to: query.to,
       // `overdue` n'est pas dans le schéma partagé : lu tel quel, avec la
@@ -125,8 +129,13 @@ export const me: RequestHandler = asyncHandler(async (req, res) => {
  * Facture complète : en-tête, lignes et paiements (avec l'auteur de l'encaissement).
  */
 export const detail: RequestHandler = asyncHandler(async (req, res) => {
+  const user = requireUser(req);
   const id = readId(req);
   const invoice = await service.getInvoice(id);
+  const isPatientOnly = user.roles.includes('PATIENT') && !user.permissions.includes('patient:manage');
+  if (isPatientOnly && user.patientId !== invoice.patient_id) {
+    throw AppError.forbidden('Vous ne pouvez accéder qu’à vos propres factures.', 'NOT_YOUR_INVOICE');
+  }
   res.json({ data: invoice });
 });
 

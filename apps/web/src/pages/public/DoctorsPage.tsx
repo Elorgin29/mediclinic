@@ -21,7 +21,7 @@ export default function DoctorsPage(): JSX.Element {
 
   const specialtiesQuery = useQuery({
     queryKey: queryKeys.specialties.all,
-    queryFn: () => apiGet<Specialty[]>('/specialties'),
+    queryFn: () => apiGet<Specialty[]>('/specialties/public'),
   });
 
   const doctorsQuery = useQuery({

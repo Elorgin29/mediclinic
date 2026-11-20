@@ -21,6 +21,11 @@ body:json {
   }
 }
 
+vars:pre-request {
+  email: superadmin@mediclinic.fr
+  password: Passw0rd!2026
+}
+
 assert {
   res.status: eq 200
 }
@@ -52,14 +57,14 @@ tests {
 
 docs {
   ### Login
-
+  
   `POST {{baseUrl}}/api/auth/login`
-
+  
   Connexion email/mot de passe (public, 10 échecs max / 15 min). Le script post-response stocke `accessToken` et `refreshToken` dans les variables Bruno. Réponse `{ data: { user, tokens } }`.
-
+  
   **Authentification** : publique / optionnelle
-
+  
   **Réponse attendue** : 200 — enveloppe `{ data: ... }` (ou fichier binaire pour PDF/CSV)
-
+  
   **Contrôles automatiques** : assertion de statut + test `statut 2xx` + test d’enveloppe JSON (ignoré pour 204 et les fichiers).
 }

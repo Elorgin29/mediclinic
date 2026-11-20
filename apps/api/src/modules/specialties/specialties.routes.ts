@@ -34,6 +34,12 @@ const specialtyListQuerySchema = listQuerySchema.partial();
 /** Paramètre de route `:id` converti en entier positif par le schéma partagé. */
 const idParamsSchema = z.object({ id: idSchema });
 
+/**
+ * Annuaire public des spécialités (sans jeton). Déclaré avant `/:id` pour
+ * primer sur celui-ci ; utilisé par les pages publiques du site.
+ */
+specialtiesRouter.get('/public', validate({ query: specialtyListQuerySchema }), controller.list);
+
 /** Liste complète (compteurs de médecins et de rendez-vous). */
 specialtiesRouter.get(
   '/',

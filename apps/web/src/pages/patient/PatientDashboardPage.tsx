@@ -15,6 +15,7 @@ import {
   type Appointment,
   type Invoice,
   type Meeting,
+  type Paginated,
   type Patient,
   type Prescription,
 } from '@mediclinic/shared';
@@ -29,10 +30,11 @@ import {
   CardHeader,
   CardsSkeleton,
   EmptyState,
+  ErrorState,
   StatusBadge,
   StatCard,
 } from '@/components/ui';
-import { apiGet } from '@/lib/apiClient';
+import { apiGet, apiGetRaw, getApiErrorMessage } from '@/lib/apiClient';
 import { queryKeys } from '@/lib/queryClient';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -65,17 +67,17 @@ export default function PatientDashboardPage(): JSX.Element {
 
   const prescriptionsQuery = useQuery({
     queryKey: queryKeys.prescriptions.all({ patientId: user?.patient_id, limit: 5 }),
-    queryFn: () => apiGet<{ data: Prescription[] }>('/prescriptions?limit=5'),
+    queryFn: () => apiGetRaw<Paginated<Prescription>>('/prescriptions/me?limit=5'),
   });
 
   const invoicesQuery = useQuery({
     queryKey: queryKeys.invoices.me,
-    queryFn: () => apiGet<Invoice[]>('/invoices/me'),
+    queryFn: () => apiGetRaw<Paginated<Invoice>>('/invoices/me'),
   });
 
   const meetingsQuery = useQuery({
     queryKey: queryKeys.meetings.me,
-    queryFn: () => apiGet<Meeting[]>('/meetings/me'),
+    queryFn: () => apiGetRaw<Paginated<Meeting>>('/meetings/me'),
   });
 
   const isLoading =
@@ -90,8 +92,29 @@ export default function PatientDashboardPage(): JSX.Element {
     );
   }
 
+  const failedQuery = [
+    patientQuery,
+    appointmentsQuery,
+    prescriptionsQuery,
+    invoicesQuery,
+    meetingsQuery,
+  ].find((query) => query.isError);
+  if (failedQuery) {
+    return (
+      <div className="space-y-6">
+        <h1 className="page-title">Bonjour {user?.first_name}</h1>
+        <Card>
+          <ErrorState
+            message={getApiErrorMessage(failedQuery.error)}
+            onRetry={() => void failedQuery.refetch()}
+          />
+        </Card>
+      </div>
+    );
+  }
+
   const appointments = appointmentsQuery.data ?? [];
-  const invoices = invoicesQuery.data ?? [];
+  const invoices = invoicesQuery.data?.data ?? [];
   const upcoming = nextAppointment(appointments);
   const unpaid = invoices.filter((invoice) => invoice.status !== 'PAID' && invoice.status !== 'CANCELLED');
   const outstanding = unpaid.reduce(
@@ -126,7 +149,7 @@ export default function PatientDashboardPage(): JSX.Element {
           icon={CalendarCheck}
           tone="brand"
         />
-        <StatCard label="Ordonnances" value={prescriptionsQuery.data?.data.length ?? 0} icon={FileText} tone="info" />
+        <StatCard label="Ordonnances" value={prescriptionsQuery.data?.data?.length ?? 0} icon={FileText} tone="info" />
         <StatCard
           label="Factures à régler"
           value={unpaid.length}
@@ -136,7 +159,7 @@ export default function PatientDashboardPage(): JSX.Element {
         />
         <StatCard
           label="Téléconsultations"
-          value={(meetingsQuery.data ?? []).filter((item) => item.status === 'APPROVED').length}
+          value={(meetingsQuery.data?.data ?? []).filter((item) => item.status === 'APPROVED').length}
           icon={Video}
           tone="brand"
         />
@@ -200,7 +223,7 @@ export default function PatientDashboardPage(): JSX.Element {
             }
           />
           <CardBody className="p-0">
-            {(prescriptionsQuery.data?.data ?? []).length === 0 ? (
+            {(prescriptionsQuery.data?.data?.length ?? 0) === 0 ? (
               <EmptyState icon={FileText} title="Aucune ordonnance" />
             ) : (
               <ul className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -270,12 +293,12 @@ export default function PatientDashboardPage(): JSX.Element {
       </div>
 
       {/* Téléconsultations */}
-      {(meetingsQuery.data ?? []).length > 0 && (
+      {(meetingsQuery.data?.data ?? []).length > 0 && (
         <Card>
           <CardHeader title="Mes téléconsultations" description="Lien de connexion disponible 10 minutes avant la séance" />
           <CardBody className="p-0">
             <ul className="divide-y divide-slate-100 dark:divide-slate-800">
-              {(meetingsQuery.data ?? []).slice(0, 4).map((meeting) => (
+              {(meetingsQuery.data?.data ?? []).slice(0, 4).map((meeting) => (
                 <li key={meeting.id} className="flex items-center justify-between gap-3 px-5 py-3">
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-slate-900 dark:text-white">

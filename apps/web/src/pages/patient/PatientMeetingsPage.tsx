@@ -9,6 +9,7 @@ import {
   formatDateTime,
   MEETING_STATUS_LABELS_FR,
   type Meeting,
+  type Paginated,
 } from '@mediclinic/shared';
 import { useQuery } from '@tanstack/react-query';
 import { Clock, Info, Video } from 'lucide-react';
@@ -26,7 +27,7 @@ import {
 } from '@/components/ui';
 import { PageHeader } from '@/components/layouts/PageHeader';
 import { MeetingRoom } from '@/components/MeetingRoom';
-import { apiGet, getApiErrorMessage } from '@/lib/apiClient';
+import { apiGetRaw, getApiErrorMessage } from '@/lib/apiClient';
 import { queryKeys } from '@/lib/queryClient';
 
 /** Fenêtre de connexion : 10 minutes avant le début jusqu'à la fin prévue. */
@@ -45,10 +46,10 @@ export default function PatientMeetingsPage(): JSX.Element {
 
   const meetingsQuery = useQuery({
     queryKey: queryKeys.meetings.me,
-    queryFn: () => apiGet<Meeting[]>('/meetings/me'),
+    queryFn: () => apiGetRaw<Paginated<Meeting>>('/meetings/me'),
   });
 
-  const meetings = meetingsQuery.data ?? [];
+  const meetings = meetingsQuery.data?.data ?? [];
 
   return (
     <div className="space-y-5">

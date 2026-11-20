@@ -14,7 +14,7 @@ import { queryKeys } from '@/lib/queryClient';
 export default function SpecialtiesPage(): JSX.Element {
   const query = useQuery({
     queryKey: queryKeys.specialties.all,
-    queryFn: () => apiGet<Specialty[]>('/specialties'),
+    queryFn: () => apiGet<Specialty[]>('/specialties/public'),
   });
 
   return (

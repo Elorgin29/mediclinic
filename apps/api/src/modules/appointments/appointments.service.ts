@@ -470,6 +470,22 @@ export async function updateStatus(
   user: AuthUser,
 ): Promise<Appointment> {
   const current = await getRowOrFail(id);
+
+  // Un compte patient ne peut annuler que ses propres rendez-vous, et jamais
+  // réactiver un rendez-vous annulé ou terminé.
+  const isPatientOnly = user.roles.includes('PATIENT') && !user.permissions.includes('patient:manage');
+  if (isPatientOnly) {
+    if (user.patientId !== current.patient_id) {
+      throw AppError.forbidden('Vous ne pouvez modifier que vos propres rendez-vous.', 'NOT_YOUR_APPOINTMENT');
+    }
+    if (payload.status !== 'CANCELLED') {
+      throw AppError.forbidden('Seule l’annulation est autorisée depuis votre espace.', 'PATIENT_CANCEL_ONLY');
+    }
+    if (LOCKED_STATUSES.includes(current.status)) {
+      throw AppError.forbidden('Ce rendez-vous ne peut plus être annulé.', 'APPOINTMENT_LOCKED');
+    }
+  }
+
   assertStatusTransitionAllowed(current.status, payload.status, payload.reason, user.permissions);
 
   const changes: AppointmentChanges = { status: payload.status };
