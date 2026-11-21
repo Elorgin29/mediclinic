@@ -11,7 +11,8 @@
  *   2. `002_views.sql`  — création des vues ;
  *   3. `003_seed.sql`   — jeu de données de démonstration (optionnel) ;
  *   4. `004_news.sql`   — module Actualités + rôle Rédacteur (idempotent) ;
- *   5. `005_i18n.sql`   — dictionnaire de traductions FR/EN/MG (idempotent).
+ *   5. `005_i18n.sql`   — dictionnaire de traductions FR/EN/MG (idempotent) ;
+ *   6. `006_auto_translations.sql` — traductions générées par API (idempotent).
  *
  * UTILISATION
  *   node database/scripts/reset-db.mjs            # structure + vues seulement
@@ -224,6 +225,7 @@ async function main() {
     // 004 et 005 sont idempotents : ils mettent aussi à niveau une base déjà existante.
     await runSqlFile(connection, '004_news.sql');
     await runSqlFile(connection, '005_i18n.sql');
+    await runSqlFile(connection, '006_auto_translations.sql');
 
     // 4. Vérification.
     const [tables] = await connection.query(

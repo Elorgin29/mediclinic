@@ -23,7 +23,7 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }): JS
   }, []);
 
   return (
-    <div className="relative" ref={containerRef}>
+    <div className="relative" ref={containerRef} data-no-i18n>
       <button
         type="button"
         onClick={() => setIsOpen((open) => !open)}

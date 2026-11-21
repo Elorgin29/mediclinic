@@ -132,8 +132,15 @@ export function AdminLayout(): JSX.Element {
         )}
         aria-label={t('layout.admin.openMenu', 'Navigation du back-office')}
       >
-        <div className="flex h-16 shrink-0 items-center justify-between gap-2 border-b border-slate-200 px-4 dark:border-slate-800">
-          <Link to="/admin" className="flex min-w-0 items-center gap-2.5" title={APP_NAME}>
+        {/* En-tête : le monogramme et le bouton de repli sont alignés sur le
+            même axe vertical. Quand la barre est réduite, le bouton passe sous
+            le logo pour rester cliquable sans chevaucher celui-ci. */}
+        <div className="relative flex h-16 shrink-0 items-center border-b border-slate-200 px-4 dark:border-slate-800">
+          <Link
+            to="/admin"
+            className={cn('flex min-w-0 items-center gap-2.5', isCollapsed ? 'mx-auto' : 'pr-10')}
+            title={APP_NAME}
+          >
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-700 text-sm font-bold text-white">
               MC
             </span>
@@ -142,28 +149,44 @@ export function AdminLayout(): JSX.Element {
             )}
           </Link>
 
-          <div className="flex items-center gap-0.5">
+          {!isCollapsed && (
             <Button
               variant="ghost"
               size="icon"
-              className="hidden lg:inline-flex"
-              onClick={() => setIsCollapsed((value) => !value)}
-              aria-label={t(isCollapsed ? 'layout.admin.expand' : 'layout.admin.collapse')}
-              title={t(isCollapsed ? 'layout.admin.expand' : 'layout.admin.collapse')}
+              className="absolute right-2 top-1/2 hidden -translate-y-1/2 lg:inline-flex"
+              onClick={() => setIsCollapsed(true)}
+              aria-label={t('layout.admin.collapse')}
+              title={t('layout.admin.collapse')}
             >
-              {isCollapsed ? <PanelLeftOpen className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
+              <PanelLeftClose className="h-5 w-5" />
             </Button>
+          )}
+
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-2 top-1/2 -translate-y-1/2 lg:hidden"
+            onClick={() => setIsSidebarOpen(false)}
+            aria-label={t('common.close')}
+          >
+            <X className="h-5 w-5" />
+          </Button>
+        </div>
+
+        {isCollapsed && (
+          <div className="flex shrink-0 justify-center border-b border-slate-100 py-1.5 dark:border-slate-800">
             <Button
               variant="ghost"
               size="icon"
-              className="lg:hidden"
-              onClick={() => setIsSidebarOpen(false)}
-              aria-label={t('common.close')}
+              className="lg:inline-flex"
+              onClick={() => setIsCollapsed(false)}
+              aria-label={t('layout.admin.expand')}
+              title={t('layout.admin.expand')}
             >
-              <X className="h-5 w-5" />
+              <PanelLeftOpen className="h-5 w-5" />
             </Button>
           </div>
-        </div>
+        )}
 
         <nav className={cn('flex-1 overflow-y-auto py-4', isCollapsed ? 'px-2' : 'px-3')}>
           {ADMIN_NAV.map((group) => {

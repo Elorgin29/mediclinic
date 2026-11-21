@@ -12,6 +12,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { Toaster } from 'sonner';
 
+import { AutoTranslate } from '@/components/AutoTranslate';
 import { AppRoutes } from '@/routes/AppRoutes';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { I18nProvider } from '@/i18n/I18nContext';
@@ -34,6 +35,7 @@ ReactDOM.createRoot(rootElement).render(
       <BrowserRouter>
         <I18nProvider>
           <AuthProvider>
+            <AutoTranslate />
             <AppRoutes />
             <Toaster
               position="top-right"

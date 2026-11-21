@@ -1,0 +1,44 @@
+meta {
+  name: Translate
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/i18n/translate
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "target": "en",
+    "texts": ["Bonjour", "Rendez-vous aujourd’hui", "Se connecter"]
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  const body = res.getBody();
+  const isJson = body && typeof body === "object" && !Array.isArray(body) && !Buffer.isBuffer(body);
+
+  test("statut 2xx", () => expect(res.status).to.be.within(200, 299));
+  if (res.status !== 204 && isJson) {
+    test("enveloppe data", () => expect(body).to.have.property("data"));
+  }
+}
+
+docs {
+  ### Translate
+
+  `POST {{baseUrl}}/api/i18n/translate`
+
+  Traduit à la demande (API gratuite Google/MyMemory) et met en cache en base. Utilisé par l'interface pour les textes non encore traduits.
+}

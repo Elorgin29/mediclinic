@@ -33,6 +33,8 @@ interface I18nValue {
   t: (key: string, fallback?: string) => string;
   /** Dictionnaire chargé depuis la base (utile pour les débogages). */
   dbDictionary: Record<string, string>;
+  /** Ajoute des traductions obtenues à la demande. */
+  addTranslations: (translations: Record<string, string>) => void;
 }
 
 const I18nContext = createContext<I18nValue | null>(null);
@@ -60,10 +62,26 @@ export function I18nProvider({ children }: { children: ReactNode }): JSX.Element
     }
 
     let cancelled = false;
-    setDbDictionary({});
+    const cacheKey = `mediclinic.i18n.${locale}`;
+    try {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        const parsed = JSON.parse(cached) as { translations?: Record<string, string> };
+        if (parsed.translations) setDbDictionary(parsed.translations);
+      }
+    } catch {
+      // Cache illisible : on recharge depuis l'API.
+    }
+
     void apiGetRaw<{ data?: { translations?: Record<string, string> } }>(`/i18n?locale=${locale}`)
       .then((response) => {
-        if (!cancelled) setDbDictionary(response.data?.translations ?? {});
+        const dictionary = response.data?.translations ?? {};
+        if (!cancelled) setDbDictionary(dictionary);
+        try {
+          localStorage.setItem(cacheKey, JSON.stringify({ translations: dictionary }));
+        } catch {
+          // Stockage saturé : le dictionnaire reste en mémoire.
+        }
       })
       .catch(() => {
         // L'API peut être indisponible : l'interface reste traduite par le dictionnaire local.
@@ -76,6 +94,11 @@ export function I18nProvider({ children }: { children: ReactNode }): JSX.Element
 
   const setLocale = useCallback((next: Locale) => setLocaleState(next), []);
 
+  const addTranslations = useCallback((translations: Record<string, string>) => {
+    if (Object.keys(translations).length === 0) return;
+    setDbDictionary((current) => ({ ...current, ...translations }));
+  }, []);
+
   const t = useCallback(
     (key: string, fallback?: string): string =>
       dbDictionary[key] ?? translate(locale, key, fallback),
@@ -83,8 +106,8 @@ export function I18nProvider({ children }: { children: ReactNode }): JSX.Element
   );
 
   const value = useMemo<I18nValue>(
-    () => ({ locale, setLocale, t, dbDictionary }),
-    [locale, setLocale, t, dbDictionary],
+    () => ({ locale, setLocale, t, dbDictionary, addTranslations }),
+    [locale, setLocale, t, dbDictionary, addTranslations],
   );
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
